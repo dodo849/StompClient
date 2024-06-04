@@ -36,7 +36,7 @@ protocol StompRequestMessage {
 }
 
 extension StompRequestMessage {
-    func toFrame() -> String {
+    public func toFrame() -> String {
         var frame = "\(command.rawValue)\n"
         for (key, value) in headers {
             frame += "\(key):\(value)\n"
@@ -158,6 +158,7 @@ struct StompDisconnectMessage: StompRequestMessage {
 }
 
 
+// 🔽 not supported yet
 struct StompNackMessage: StompRequestMessage {
     let command: StompRequestCommand = .nack
     let headers: [String: String]

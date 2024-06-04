@@ -20,7 +20,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
     private var receiveCompletions: [String: [ReceiveCompletion]] = [:]
     private var idByTopic: [String: String] = [:]
     
-    init(url: URL) {
+    public init(url: URL) {
         self.url = url
         self.websocketClient = WebSocketClient(url: url)
         super.init()

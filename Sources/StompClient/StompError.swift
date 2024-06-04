@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum StompError: Error {
+public enum StompError: Error {
     case invalidCommand
     case invalidHeader
     case invalidBody

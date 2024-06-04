@@ -20,7 +20,7 @@ public struct StompReceiveMessage {
 }
 
 extension StompReceiveMessage {
-    func decode(
+    public func decode(
         using encoding: String.Encoding = .utf8
     ) -> String? {
         guard let data = body else {
@@ -30,7 +30,7 @@ extension StompReceiveMessage {
         return String(data: data, encoding: encoding)
     }
     
-    func decode<D: Decodable>(
+    public func decode<D: Decodable>(
         _ type: D.Type,
         using decoder: JSONDecoder = JSONDecoder()
     ) throws -> D? {
