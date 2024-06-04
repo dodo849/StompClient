@@ -47,7 +47,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
             }
         }
         
-        guard let host = url.host()
+        guard let host = url.host
         else { completion(StompError.invalidURLHost); return }
         
         let connectMessage = StompConnectMessage(host: host)
