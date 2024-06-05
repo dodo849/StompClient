@@ -66,7 +66,7 @@ public protocol StompProtocol {
      - Parameters:
         - completion: A completion handler called when the disconnect is successful or if an error occurs.
      */
-    public func disconnect(
+    func disconnect(
         _ completion: @escaping ((any Error)?) -> Void
-    ) {
+    )
 }
