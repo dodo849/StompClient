@@ -17,7 +17,7 @@ public protocol StompProtocol {
      */
     func connect(
         acceptVersion: String,
-        completion: @escaping ((any Error)?) -> Void
+        _ completion: @escaping ((any Error)?) -> Void
     )
     
     /**
@@ -62,6 +62,11 @@ public protocol StompProtocol {
     
     /**
      Disconnects from the STOMP server.
+     
+     - Parameters:
+        - completion: A completion handler called when the disconnect is successful or if an error occurs.
      */
-    func disconnect()
+    public func disconnect(
+        _ completion: @escaping ((any Error)?) -> Void
+    ) {
 }
