@@ -11,6 +11,7 @@ import OSLog
 class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession?
+    private(set) var isConnected: Bool = false
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: "WebSocket"
@@ -55,7 +56,9 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
                 print("WebSocket receive message:\n\(message)")
                 completion(.success(message))
             }
-            self?.receiveMessage(completion)
+            if self?.isConnected == true {
+                self?.receiveMessage(completion)
+            }
         }
     }
 
@@ -68,10 +71,12 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     // URLSessionWebSocketDelegate methods
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         self.logger.info("WebSocket connected successfully")
+        isConnected = true
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         self.logger.info("WebSocket disconnected")
+        isConnected = false
     }
 }
 
