@@ -55,6 +55,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
                 print("WebSocket receive message:\n\(message)")
                 completion(.success(message))
             }
+            self?.receiveMessage(completion)
         }
     }
 
