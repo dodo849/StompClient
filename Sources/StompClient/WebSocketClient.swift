@@ -11,7 +11,8 @@ import OSLog
 class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession?
-    private(set) var isConnected: Bool = false
+    private var connectCompletion: ((Error?) -> Void)?
+    private var disconnectCompletion: ((Error?) -> Void)?
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: "WebSocket"
@@ -25,7 +26,9 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     }
     
     func connect(
+        _ completion: @escaping (Error?) -> Void
     ) {
+        self.connectCompletion = completion
         webSocketTask?.resume()
     }
     
@@ -47,36 +50,52 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     func receiveMessage(
         _ completion: @escaping (Result<URLSessionWebSocketTask.Message, Error>) -> Void
     ) {
-        webSocketTask?.receive { [weak self] (result: Result<URLSessionWebSocketTask.Message, Error>) in
+        webSocketTask?.receive { [weak self] result in
             switch result {
             case .failure(let error):
                 self?.logger.critical("WebSocket receive error message:\n\(error)")
                 completion(.failure(error))
             case .success(let message):
-                print("WebSocket receive message:\n\(message)")
+                self?.printReceivedMessage(message)
                 completion(.success(message))
-            }
-            if self?.isConnected == true {
                 self?.receiveMessage(completion)
             }
+        }
+    }
+    
+    private func printReceivedMessage (
+        _ message: URLSessionWebSocketTask.Message
+    ) {
+        switch message {
+        case .string(let text):
+            print("WebSocket receive message:\n\(text)")
+        case .data(let data):
+            print("WebSocket receive message:\n\(data)")
+        @unknown default:
+            fatalError()
         }
     }
 
 
     
-    func disconnect() {
+    func disconnect(
+        _ completion: @escaping (Error?) -> Void
+    ) {
+        self.disconnectCompletion = completion
         webSocketTask?.cancel(with: .goingAway, reason: nil)
     }
     
     // URLSessionWebSocketDelegate methods
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         self.logger.info("WebSocket connected successfully")
-        isConnected = true
+        connectCompletion?(nil)
+        connectCompletion = nil
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         self.logger.info("WebSocket disconnected")
-        isConnected = false
+        disconnectCompletion?(nil)
+        disconnectCompletion = nil
     }
 }
 
