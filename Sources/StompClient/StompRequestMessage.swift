@@ -25,6 +25,17 @@ public enum StompBody {
     case data(Data)
     case string(String)
     case json(Encodable)
+    
+    var contentType: String {
+        switch(self) {
+        case .data:
+            return "application/octet-stream"
+        case .string:
+            return "text/plain"
+        case .json:
+            return "application/json"
+        }
+    }
 }
 
 protocol StompRequestMessage {
@@ -38,9 +49,17 @@ protocol StompRequestMessage {
 extension StompRequestMessage {
     public func toFrame() -> String {
         var frame = "\(command.rawValue)\n"
-        for (key, value) in headers {
+        
+        var updatedHeaders = headers
+        
+        if let body = body {
+            updatedHeaders["content-type"] = body.contentType
+        }
+        
+        for (key, value) in updatedHeaders {
             frame += "\(key):\(value)\n"
         }
+        
         frame += "\n"
         
         if let body = body {
