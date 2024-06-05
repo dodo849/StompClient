@@ -11,8 +11,6 @@ import OSLog
 class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession?
-    private var connectCompletion: ((Error?) -> Void)?
-    private var disconnectCompletion: ((Error?) -> Void)?
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: "WebSocket"
@@ -25,10 +23,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         webSocketTask = urlSession?.webSocketTask(with: url)
     }
     
-    func connect(
-        _ completion: @escaping (Error?) -> Void
-    ) {
-        self.connectCompletion = completion
+    func connect() {
         webSocketTask?.resume()
     }
     
@@ -79,23 +74,17 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
 
     
     func disconnect(
-        _ completion: @escaping (Error?) -> Void
     ) {
-        self.disconnectCompletion = completion
         webSocketTask?.cancel(with: .goingAway, reason: nil)
     }
     
     // URLSessionWebSocketDelegate methods
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         self.logger.info("WebSocket connected successfully")
-        self.connectCompletion?(nil)
-        self.connectCompletion = nil
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         self.logger.info("WebSocket disconnected")
-        self.disconnectCompletion?(nil)
-        self.disconnectCompletion = nil
     }
 }
 

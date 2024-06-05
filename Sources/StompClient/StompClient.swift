@@ -30,7 +30,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         acceptVersion accecptVersion: String = "1.2",
         _ completion: @escaping ((any Error)?) -> Void
     ) {
-        websocketClient.connect(completion)
+        websocketClient.connect()
         websocketClient.receiveMessage() { [weak self] result in
             switch result {
             case .failure(let error):
@@ -132,12 +132,8 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         receiveCompletions.removeValue(forKey: topic)
     }
     
-    public func disconnect(
-        _ completion: @escaping ((any Error)?) -> Void
-    ) {
-        websocketClient.disconnect() { error in
-            completion(error)
-        }
+    public func disconnect() {
+        websocketClient.disconnect()
     }
     
     private func parseTopic(_ frame: String) -> String? {
