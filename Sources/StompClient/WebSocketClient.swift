@@ -88,14 +88,14 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     // URLSessionWebSocketDelegate methods
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
         self.logger.info("WebSocket connected successfully")
-        connectCompletion?(nil)
-        connectCompletion = nil
+        self.connectCompletion?(nil)
+        self.connectCompletion = nil
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         self.logger.info("WebSocket disconnected")
-        disconnectCompletion?(nil)
-        disconnectCompletion = nil
+        self.disconnectCompletion?(nil)
+        self.disconnectCompletion = nil
     }
 }
 

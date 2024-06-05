@@ -30,9 +30,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         acceptVersion accecptVersion: String = "1.2",
         _ completion: @escaping ((any Error)?) -> Void
     ) {
-        websocketClient.connect() { error in
-            completion(error)
-        }
+        websocketClient.connect(completion)
         websocketClient.receiveMessage() { [weak self] result in
             switch result {
             case .failure(let error):
