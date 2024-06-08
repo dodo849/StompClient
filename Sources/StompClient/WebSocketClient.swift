@@ -11,19 +11,28 @@ import OSLog
 class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession?
+    private let url: URL
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: "WebSocket"
     )
     
     init(url: URL) {
+        self.url = url
         super.init()
+        createURLSession()
+    }
+    
+    private func createURLSession() {
         let configuration = URLSessionConfiguration.default
         urlSession = URLSession(configuration: configuration, delegate: self, delegateQueue: OperationQueue())
         webSocketTask = urlSession?.webSocketTask(with: url)
     }
     
     func connect() {
+        if webSocketTask == nil {
+            createURLSession()
+        }
         webSocketTask?.resume()
     }
     
@@ -73,9 +82,9 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
 
 
     
-    func disconnect(
-    ) {
+    func disconnect() {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
+        webSocketTask = nil
     }
     
     // URLSessionWebSocketDelegate methods
