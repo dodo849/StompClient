@@ -13,7 +13,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         var subscriptionID: String
     }
     
-    private var websocketClient: WebSocketClient
+    private var websocketClient: WebSocketClient?
     private var url: URL
     /// key: topic
     /// value: receive completion
@@ -30,8 +30,12 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         acceptVersion accecptVersion: String = "1.2",
         _ completion: @escaping ((any Error)?) -> Void
     ) {
-        websocketClient.connect()
-        websocketClient.receiveMessage() { [weak self] result in
+        if websocketClient == nil {
+             websocketClient? = WebSocketClient(url: url)
+         }
+        
+        websocketClient?.connect()
+        websocketClient?.receiveMessage() { [weak self] result in
             switch result {
             case .failure(let error):
                 completion(error)
@@ -51,7 +55,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         else { completion(StompError.invalidURLHost); return }
         
         let connectMessage = StompConnectMessage(host: host)
-        websocketClient.sendMessage(connectMessage.toFrame(), completion)
+        websocketClient?.sendMessage(connectMessage.toFrame(), completion)
         
     }
     
@@ -87,7 +91,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         completion: @escaping ((any Error)?) -> Void
     ) {
         let sendMessage = StompSendMessage(destination: topic, body: body)
-        websocketClient.sendMessage(sendMessage.toFrame(), completion)
+        websocketClient?.sendMessage(sendMessage.toFrame(), completion)
     }
     
     public func subscribe(
@@ -107,7 +111,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
             id: subscriptionID,
             destination: topic
         )
-        websocketClient.sendMessage(subscribeMessage.toFrame(), { _ in })
+        websocketClient?.sendMessage(subscribeMessage.toFrame(), { _ in })
         
         let newCompletion = ReceiveCompletion(
             completion: receiveCompletion,
@@ -127,13 +131,14 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
     ) {
         if let id = idByTopic[topic] {
             let unsubscribeMessage = StompUnsubscribeMessage(id: id)
-            websocketClient.sendMessage(unsubscribeMessage.toFrame(), completion)
+            websocketClient?.sendMessage(unsubscribeMessage.toFrame(), completion)
         }
         receiveCompletions.removeValue(forKey: topic)
     }
     
     public func disconnect() {
-        websocketClient.disconnect()
+        websocketClient?.disconnect()
+        websocketClient = nil
     }
     
     private func parseTopic(_ frame: String) -> String? {
