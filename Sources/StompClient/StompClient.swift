@@ -103,6 +103,12 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
             }
         }()
         
+        let subscribeMessage = StompSubscribeMessage(
+            id: subscriptionID,
+            destination: topic
+        )
+        websocketClient.sendMessage(subscribeMessage.toFrame(), { _ in })
+        
         let newCompletion = ReceiveCompletion(
             completion: receiveCompletion,
             subscriptionID: subscriptionID
@@ -111,12 +117,6 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
         if let _ = receiveCompletions[topic] {
             receiveCompletions[topic]?.append(newCompletion)
         } else {
-            let subscribeMessage = StompSubscribeMessage(
-                id: subscriptionID,
-                destination: topic
-            )
-            websocketClient.sendMessage(subscribeMessage.toFrame(), { _ in })
-            
             receiveCompletions[topic] = [newCompletion]
         }
     }
