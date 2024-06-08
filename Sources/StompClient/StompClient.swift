@@ -134,6 +134,7 @@ public final class StompClient: NSObject, URLSessionDelegate, StompProtocol {
     
     public func disconnect() {
         websocketClient.disconnect()
+        receiveCompletions.removeAll()
     }
     
     private func parseTopic(_ frame: String) -> String? {
