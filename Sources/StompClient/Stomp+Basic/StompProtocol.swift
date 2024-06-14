@@ -30,7 +30,7 @@ public protocol StompProtocol {
      */
     func send(
         topic: String,
-        body: StompBody,
+        body: StompBody?,
         completion: @escaping ((any Error)?) -> Void
     )
     

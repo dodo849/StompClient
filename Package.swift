@@ -1,4 +1,4 @@
-// swift-tools-version: 5.10
+// swift-tools-version:5.3
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -6,7 +6,10 @@ import PackageDescription
 let package = Package(
     name: "StompClient",
     platforms: [
-        .iOS(.v14)
+        .iOS(.v13),
+        .macOS(.v11),
+        .tvOS(.v14),
+        .watchOS(.v7)
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.

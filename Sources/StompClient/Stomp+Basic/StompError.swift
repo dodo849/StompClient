@@ -7,10 +7,11 @@
 
 import Foundation
 
-public enum StompError: Error {
+public enum StompError: LocalizedError {
     case invalidCommand
-    case invalidHeader
+    case invalidHeader(String)
     case invalidBody
+    case invalidTopic
     case invalidURLHost
-    case decodingError
+    case decodingError(String)
 }
