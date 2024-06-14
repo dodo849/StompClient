@@ -8,7 +8,9 @@
 import Foundation
 
 extension StompCommand {
-    func headers() -> [String: String] {
+    func headers(
+        _ additionalHeaders: [String: String] = [:]
+    ) -> [String: String] {
         let mirror = Mirror(reflecting: self)
         var headers: [String: String] = [:]
         
@@ -17,9 +19,6 @@ extension StompCommand {
             
             for valueChild in childMirror.children {
                 if let label = valueChild.label {
-                    if label == "body" { continue }
-                    if label == "receiveHandler" { continue }
-                    
                     let headerName = convertToDashCase(label)
                     
                     if let value = valueChild.value as? String {
@@ -39,7 +38,9 @@ extension StompCommand {
             }
         }
         
-        return headers
+        let mergedHeaders = headers.merging(additionalHeaders) { (_, explicit) in explicit }
+        
+        return mergedHeaders
     }
     
     private func convertToDashCase(_ camelCase: String) -> String {

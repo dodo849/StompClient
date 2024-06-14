@@ -25,10 +25,10 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         _ completion: @escaping (Result<ResponseType?, any Error>) -> Void
     ) {
         switch entry.command {
-        case let .send(_, _, _, _, _, body):
+        case .send:
             client.send(
-                headers: entry.command.headers(),
-                body: body
+                headers: entry.command.headers(entry.destinationHeader),
+                body: entry.body.toStompBody()
             ) { result in
                 switch result {
                 case .failure(let error):
@@ -40,7 +40,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .subscribe:
             client.subscribe(
-                headers: entry.command.headers()
+                headers: entry.command.headers(entry.destinationHeader)
             ) { [weak self] result in
                 switch result {
                 case .success(let receiveMessage):

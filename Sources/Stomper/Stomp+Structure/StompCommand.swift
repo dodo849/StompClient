@@ -8,11 +8,12 @@
 import Foundation
 
 /**
- A collection of STOMP commands that include the mandatory headers and optional body for each command.
+ A collection of STOMP commands that include the mandatory headers  for each command.
  This follows the STOMP protocol version 1.2.
  For more details, refer to the specification at: https://stomp.github.io/stomp-specification-1.2.html
  */
 public enum StompCommand {
+    /// If `acceptVersion` is nil, they will be filled automatically.
     case connect(
         acceptVersion: String? = "1.2",
         host: String,
@@ -31,16 +32,13 @@ public enum StompCommand {
     
     /// If `contentType` or `contentLength` is nil, they will be filled automatically.
     case send(
-        destination: String,
         transaction: String? = nil,
         contentType: String? = nil,
         contentLength: Int? = nil,
-        receipt: String? = nil,
-        body: StompBody? = nil
+        receipt: String? = nil
     )
     
     case subscribe(
-        destination: String,
         id: String? = nil,
         ack: String? = nil
     )
@@ -77,13 +75,11 @@ public enum StompCommand {
     
     /// - Note: This is a server-side frame. It is not recommended for the client to directly send this command to the server
     case message(
-        destination: String,
         messageId: String,
         subscription: String,
         ack: String? = nil,
         contentType: String? = nil,
-        contentLength: Int? = nil,
-        body: StompBody? = nil
+        contentLength: Int? = nil
     )
 
     /// - Note: This is a server-side frame. It is not recommended for the client to directly send this command to the server
