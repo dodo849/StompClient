@@ -14,7 +14,7 @@ import Foundation
  */
 public enum StompCommand {
     case connect(
-        acceptVersion: String = "1.2",
+        acceptVersion: String? = "1.2",
         host: String,
         login: String? = nil,
         passcode: String? = nil,
@@ -41,7 +41,7 @@ public enum StompCommand {
     
     case subscribe(
         destination: String,
-        id: String,
+        id: String? = nil,
         ack: String? = nil
     )
     
