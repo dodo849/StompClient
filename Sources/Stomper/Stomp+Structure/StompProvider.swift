@@ -25,6 +25,15 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         _ completion: @escaping (Result<ResponseType?, any Error>) -> Void
     ) {
         switch entry.command {
+        case .connect:
+            client.connect() { error in
+                if let error = error {
+                    completion(.failure(error))
+                } else {
+                    completion(.success(nil))
+                }
+            }
+            
         case .send:
             client.send(
                 headers: entry.command.headers(entry.destinationHeader),
