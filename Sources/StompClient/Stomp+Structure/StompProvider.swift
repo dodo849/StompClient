@@ -102,7 +102,7 @@ private extension StompProvider {
             if let typedDecoded = decoded as? ResponseType {
                 completion(.success(typedDecoded))
             } else {
-                completion(.failure(StompError.decodingError(decodingError(ResponseType.self))))
+                completion(.failure(StompError.decodeFaild(decodingError(ResponseType.self))))
             }
         } catch {
             completion(.failure(error))
@@ -118,7 +118,7 @@ private extension StompProvider {
            let decoded = String(data: data, encoding: .utf8) as? ResponseType {
             completion(.success(decoded))
         } else {
-            completion(.failure(StompError.decodingError(decodingError(ResponseType.self))))
+            completion(.failure(StompError.decodeFaild(decodingError(ResponseType.self))))
         }
     }
     
@@ -129,7 +129,7 @@ private extension StompProvider {
         if let response = receiveMessage.body as? ResponseType {
             completion(.success(response))
         } else {
-            completion(.failure(StompError.decodingError(decodingError(ResponseType.self))))
+            completion(.failure(StompError.decodeFaild(decodingError(ResponseType.self))))
         }
     }
 }

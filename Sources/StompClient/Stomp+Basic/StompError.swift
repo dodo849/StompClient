@@ -13,5 +13,6 @@ public enum StompError: LocalizedError {
     case invalidBody
     case invalidTopic
     case invalidURLHost
-    case decodingError(String)
+    case decodeFaild(String)
+    case frameParseFailed
 }

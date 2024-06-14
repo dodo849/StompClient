@@ -56,10 +56,23 @@ public final class StompClient: NSObject, StompProtocol {
             case .success(let message):
                 switch message {
                 case .string(let text):
-                    self?.executeReceiveCompletions(text)
+                    do {
+                        try self?.executeReceiveCompletions(text)
+                    } catch {
+                        completion(error)
+                    }
                 case .data(let data):
-                    #warning("Not implemented yet")
-                    self?.logger.info("Received data: \(data)")
+                    if let decodedText = String(data: data, encoding: .utf8) {
+                        do {
+                            try self?.executeReceiveCompletions(decodedText)
+                            completion(nil)
+                        } catch {
+                            completion(error)
+                        }
+                    } else {
+                        let decodingError = StompError.decodeFaild("Failed to decode data to string")
+                        completion(decodingError)
+                    }
                 @unknown default:
                     fatalError()
                 }
@@ -247,31 +260,29 @@ private extension StompClient {
     
     private func executeReceiveCompletions(
         _ text: String
-    ) {
-        let topic = self.parseTopic(text)
+    ) throws {
+        let response = self.toReceiveMessage(text)
         
-        if let topic = topic {
-            let executeReceiveCompletions = self.receiveCompletions
-                .filter { key, value in
-                    key == topic
-                }
-            executeReceiveCompletions.forEach { _, receiveCompletions in
-                let response = self.toResponseMessage(text)
-                switch response {
-                case .failure(let error):
-                    receiveCompletions.forEach {
-                        $0.completion(.failure(error))
+        switch response {
+        case .failure(let error):
+            throw StompError.frameParseFailed
+        case .success(let receiveMessage):
+            if let topic = receiveMessage.headers["destination"] {
+                let executeReceiveCompletions = self.receiveCompletions
+                    .filter { key, value in
+                        key == topic
                     }
-                case .success(let responseMessage):
+                executeReceiveCompletions.forEach { _, receiveCompletions in
                     receiveCompletions.forEach {
-                        $0.completion(.success(responseMessage))
+                        $0.completion(.success(receiveMessage))
                     }
                 }
             }
         }
+        
     }
     
-    private func toResponseMessage(
+    private func toReceiveMessage(
         _ frame: String
     ) -> Result<StompReceiveMessage, StompError> {
         let lines = frame.split(separator: "\n", omittingEmptySubsequences: false)
