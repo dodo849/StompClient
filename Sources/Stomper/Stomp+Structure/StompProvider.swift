@@ -21,9 +21,9 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         self.client = StompClient(url: Entry.baseURL)
     }
     
-    public func request<ResponseType: ResponseProtocol>(
+    public func request<ResponseType>(
         entry: Entry,
-        _ completion: @escaping (Result<ResponseType?, any Error>) -> Void
+        _ completion: @escaping (Result<ResponseType, any Error>) -> Void
     ) {
         switch entry.command {
         case .connect:
@@ -31,7 +31,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 if let error = error {
                     completion(.failure(error))
                 } else {
-                    completion(.success(nil))
+                    completion(.success(true as! ResponseType))
                 }
             }
             
@@ -44,7 +44,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 case .failure(let error):
                     completion(.failure(error))
                 case .success(_):
-                    completion(.success(nil))
+                    completion(.success(true as! ResponseType))
                 }
             }
             
@@ -94,7 +94,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 if let error = error {
                     completion(.failure(error))
                 } else {
-                    completion(.success(nil))
+                    completion(.success(true as! ResponseType))
                 }
                 
             }
