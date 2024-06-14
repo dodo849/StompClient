@@ -10,8 +10,6 @@ import Foundation
 public protocol EntryType {
 
     static var baseURL: URL { get }
-
-    var path: String { get }
     
     var command: StompCommand { get }
 
