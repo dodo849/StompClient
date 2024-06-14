@@ -7,12 +7,6 @@
 
 import Foundation
 
-public protocol ResponseProtocol {}
-extension Bool: ResponseProtocol {}
-extension String: ResponseProtocol {}
-extension Data: ResponseProtocol {}
-extension Encodable where Self: ResponseProtocol {}
-
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     
     private let client: StompClient
