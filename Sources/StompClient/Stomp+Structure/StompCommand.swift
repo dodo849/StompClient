@@ -7,9 +7,11 @@
 
 import Foundation
 
-/// A collection of STOMP commands that include the mandatory headers and optional body for each command.
-/// This follows the STOMP protocol version 1.2.
-/// For more details, refer to the specification at: https://stomp.github.io/stomp-specification-1.2.html
+/**
+ A collection of STOMP commands that include the mandatory headers and optional body for each command.
+ This follows the STOMP protocol version 1.2.
+ For more details, refer to the specification at: https://stomp.github.io/stomp-specification-1.2.html
+ */
 public enum StompCommand {
     case connect(
         acceptVersion: String = "1.2",
@@ -27,6 +29,7 @@ public enum StompCommand {
         heartBeat: String? = nil
     )
     
+    /// If `contentType` or `contentLength` is nil, they will be filled automatically.
     case send(
         destination: String,
         transaction: String? = nil,

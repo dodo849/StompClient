@@ -22,17 +22,18 @@ open class StompProvider<Entry: EntryType> {
     
     public func request<ResponseType: ResponseProtocol>(
         entry: Entry,
-        _ completion: @escaping (Result<ResponseType?, Error>) -> Void
+        _ completion: @escaping (Result<ResponseType?, any Error>) -> Void
     ) {
         switch entry.command {
         case let .send(_, _, _, _, _, body):
             client.send(
                 headers: entry.command.headers(),
                 body: body
-            ) { error in
-                if let error = error {
+            ) { result in
+                switch result {
+                case .failure(let error):
                     completion(.failure(error))
-                } else {
+                case .success(_):
                     completion(.success(nil))
                 }
             }
@@ -95,7 +96,7 @@ private extension StompProvider {
     private func handleDecodable<ResponseType>(
         _ receiveMessage: StompReceiveMessage,
         ofType type: Decodable.Type,
-        completion: @escaping (Result<ResponseType, Error>) -> Void
+        completion: @escaping (Result<ResponseType, any Error>) -> Void
     ) {
         do {
             let decoded = try receiveMessage.decode(type)
@@ -112,7 +113,7 @@ private extension StompProvider {
     private func handleString<ResponseType>(
         _ receiveMessage: StompReceiveMessage,
         ofType type: String.Type,
-        completion: @escaping (Result<ResponseType, Error>) -> Void
+        completion: @escaping (Result<ResponseType, any Error>) -> Void
     ) {
         if let data = receiveMessage.body,
            let decoded = String(data: data, encoding: .utf8) as? ResponseType {
@@ -124,7 +125,7 @@ private extension StompProvider {
     
     private func handleData<ResponseType>(
         _ receiveMessage: StompReceiveMessage,
-        completion: @escaping (Result<ResponseType, Error>) -> Void
+        completion: @escaping (Result<ResponseType, any Error>) -> Void
     ) {
         if let response = receiveMessage.body as? ResponseType {
             completion(.success(response))

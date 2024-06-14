@@ -130,9 +130,17 @@ struct StompSendMessage: StompRequestMessage {
         destination: String,
         body: StompBody?
     ) {
-        self.headers = [
-            "destination": destination
-        ]
+        self.headers = {
+            if let body = body {
+                return [
+                    "destination": destination,
+                    "content-type": body.contentType,
+                    "content-length": "\(body.contentLength)"
+                ]
+            } else {
+                return ["destination": destination]
+            }
+        }()
         self.body = body
     }
     

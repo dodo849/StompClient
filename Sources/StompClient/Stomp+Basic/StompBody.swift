@@ -22,4 +22,21 @@ public enum StompBody {
             return "application/json"
         }
     }
+    
+    var contentLength: Int {
+        switch self {
+        case .data(let data):
+            return data.count
+        case .string(let string):
+            return string.utf8.count
+        case .json(let encodable, let encoder):
+            let encoderToUse = encoder ?? JSONEncoder()
+            do {
+                let jsonData = try encoderToUse.encode(encodable)
+                return jsonData.count
+            } catch {
+                return 0
+            }
+        }
+    }
 }

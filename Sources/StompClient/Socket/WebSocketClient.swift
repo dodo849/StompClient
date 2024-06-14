@@ -9,7 +9,7 @@ import Foundation
 import OSLog
 
 class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
-    private typealias ConnectCompletion = (Error?) -> Void
+    private typealias ConnectCompletion = ((any Error)?) -> Void
     
     private let logger = Logger(
         subsystem: Bundle.main.bundleIdentifier!,

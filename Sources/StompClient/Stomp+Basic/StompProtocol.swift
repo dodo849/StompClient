@@ -9,6 +9,18 @@ import Foundation
 
 public protocol StompProtocol {
     /**
+     Sends a generic STOMP message.
+     
+     - Parameters:
+        - message: The STOMP message to be sent.
+        - completion: A completion handler called when the message is sent or if an error occurs.
+     */
+    func sendAnyMessage(
+        message: StompAnyMessage,
+        _ completion: @escaping ((any Error)?) -> Void
+    )
+    
+    /**
      Connects to the STOMP server.
      
      - Parameters:
@@ -26,12 +38,14 @@ public protocol StompProtocol {
      - Parameters:
         - topic: The topic to which the message is sent.
         - body: The body of the message to be sent.
-        - completion: A completion handler called when the message is sent or if an error occurs.
+        - receiptID: An identifier for the receipt. The server will acknowledge the processing of this frame with a RECEIPT frame.
+        - completion: A completion handler called when the receipt for the message is received or if an error occurs.
      */
     func send(
         topic: String,
         body: StompBody?,
-        completion: @escaping ((any Error)?) -> Void
+        receiptID: String,
+        _ completion: @escaping (Result<StompReceiveMessage, Error>) -> Void
     )
     
     /**
@@ -57,7 +71,7 @@ public protocol StompProtocol {
      */
     func unsubscribe(
         topic: String,
-        completion: @escaping ((any Error)?) -> Void
+        _ completion: @escaping ((any Error)?) -> Void
     )
     
     /**
