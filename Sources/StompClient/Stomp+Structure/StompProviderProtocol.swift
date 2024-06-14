@@ -9,9 +9,7 @@ import Foundation
 
 public protocol StompProviderProtocol {
     associatedtype Entry: EntryType
-    
-    init()
-    
+
     /**
      Sends a request using the specified entry and calls a completion handler when the request is complete.
      
