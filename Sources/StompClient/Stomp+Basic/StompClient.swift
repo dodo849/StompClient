@@ -114,7 +114,7 @@ public final class StompClient: NSObject, StompProtocol {
     public func send(
         topic: String,
         body: StompBody?,
-        receiptID: String,
+        receiptID: String? = nil,
         _ completion: @escaping ReceiveCompletionType
     ) {
         let sendMessage = StompSendMessage(destination: topic, body: body)

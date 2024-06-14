@@ -44,7 +44,7 @@ public protocol StompProtocol {
     func send(
         topic: String,
         body: StompBody?,
-        receiptID: String,
+        receiptID: String?,
         _ completion: @escaping (Result<StompReceiveMessage, Error>) -> Void
     )
     
