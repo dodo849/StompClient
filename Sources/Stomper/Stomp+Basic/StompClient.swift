@@ -337,7 +337,7 @@ private extension StompClient {
         
         guard let commandString = lines.first,
               let command = StompResponseCommand(rawValue: String(commandString)) else {
-            throw StompError.invalidCommand
+            throw StompError.invalidCommand("\(lines.first ?? "") is invalid command")
         }
         
         let splitIndex = lines.firstIndex(where: { $0.isEmpty }) ?? lines.endIndex
