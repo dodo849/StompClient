@@ -28,6 +28,9 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     ) {
         let interceptedEntry = intercepters.reduce(entry) { $1.intercept($0) }
         
+        let mergingHeaders = entry.headers
+            .merging(entry.destinationHeader) { (_, explicit) in explicit }
+        
         switch entry.command {
         case .connect:
             client.connect() { [weak self] error in
@@ -49,7 +52,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .send:
             client.send(
-                headers: entry.command.headers(entry.destinationHeader),
+                headers: entry.command.headers(mergingHeaders),
                 body: entry.body.toStompBody()
             ) { [weak self] result in
                 switch result {
@@ -71,7 +74,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .subscribe:
             client.subscribe(
-                headers: entry.command.headers(entry.destinationHeader)
+                headers: entry.command.headers(mergingHeaders)
             ) { [weak self] result in
                 switch result {
                 case .success(let receiveMessage):
@@ -109,7 +112,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             }
             let message = StompAnyMessage(
                 command: command,
-                headers: entry.command.headers(),
+                headers: mergingHeaders,
                 body: nil
             )
             
