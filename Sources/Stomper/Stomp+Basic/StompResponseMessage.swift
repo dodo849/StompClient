@@ -8,6 +8,7 @@
 import Foundation
 
 public enum StompResponseCommand: String {
+    case connected = "CONNECTED"
     case message = "MESSAGE"
     case receipt = "RECEIPT"
     case error = "ERROR"

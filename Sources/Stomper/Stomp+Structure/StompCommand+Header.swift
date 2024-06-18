@@ -36,7 +36,7 @@ extension StompCommand {
                     }
                 }
             }
-        }
+        } 
         
         let mergedHeaders = headers.merging(additionalHeaders) { (_, explicit) in explicit }
         

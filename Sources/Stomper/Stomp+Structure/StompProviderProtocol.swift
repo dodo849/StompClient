@@ -22,11 +22,11 @@ public protocol StompProviderProtocol {
      - If the command is `connect`, completion indicates any error that occurs during receiving server frame.
      - If the command is `subscribe`, completion indicates receiving a MESSAGE frame from the server or an error.
      - If the command is `send`, completion indicates receiving a RECEIPT frame from the server or an error.
-     - For other commands, completion indicates either socket-level success or an error, as well as any frame parse errors that occur.
+     - For other commands, completion indicates callbacks for the Receipt frame if there is a receipt-id header.
      */
-    func request<ResponseType: ResponseProtocol>(
+    func request<Response>(
         entry: Entry,
-        _ completion: @escaping (Result<ResponseType?, any Error>) -> Void
+        _ completion: @escaping (Result<Response, any Error>) -> Void
     )
     
     /**

@@ -9,7 +9,6 @@ import Foundation
 
 public enum StompCommandType: String {
     case connect = "CONNECT"
-    case connected = "CONNECTED"
     case subscribe = "SUBSCRIBE"
     case send = "SEND"
     case disconnect = "DISCONNECT"

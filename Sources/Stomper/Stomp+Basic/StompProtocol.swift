@@ -17,7 +17,7 @@ public protocol StompProtocol {
      */
     func sendAnyMessage(
         message: StompAnyMessage,
-        _ completion: @escaping ((any Error)?) -> Void
+        _ completion: @escaping (Result<StompReceiveMessage, any Error>) -> Void
     )
     
     /**

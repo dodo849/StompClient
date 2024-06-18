@@ -15,4 +15,5 @@ public enum StompError: LocalizedError {
     case invalidURLHost
     case decodeFaild(String?)
     case frameParseFailed
+    case responseTypeMismatch(String?)
 }

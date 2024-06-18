@@ -7,25 +7,43 @@
 
 import Foundation
 
+public extension StompProvider {
+    func intercept(_ intercepters: [Intercepter]) {
+        self.intercepters = intercepters
+    }
+}
+
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     
     private let client: StompClient
+    private var intercepters: [Intercepter] = []
     
     public init() {
         self.client = StompClient(url: Entry.baseURL)
     }
     
-    public func request<ResponseType>(
+    public func request<Response>(
         entry: Entry,
-        _ completion: @escaping (Result<ResponseType, any Error>) -> Void
+        _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
+        let interceptedEntry = intercepters.reduce(entry) { $1.intercept($0) }
+        
         switch entry.command {
         case .connect:
-            client.connect() { error in
+            client.connect() { [weak self] error in
                 if let error = error {
                     completion(.failure(error))
                 } else {
-                    completion(.success(true as! ResponseType))
+                    if let response = "Connect success" as? Response {
+                        completion(.success(response))
+                    } else {
+                        self?.handleTypeMismatchError(
+                            "Connect success case of request method",
+                            Response.self,
+                            String.self,
+                            completion
+                        )
+                    }
                 }
             }
             
@@ -33,12 +51,21 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             client.send(
                 headers: entry.command.headers(entry.destinationHeader),
                 body: entry.body.toStompBody()
-            ) { result in
+            ) { [weak self] result in
                 switch result {
                 case .failure(let error):
                     completion(.failure(error))
-                case .success(_):
-                    completion(.success(true as! ResponseType))
+                case .success(let reciptMessage):
+                    if let response = reciptMessage as? Response {
+                        completion(.success(response))
+                    } else {
+                        self?.handleTypeMismatchError(
+                            "Send success case of request method",
+                            Response.self,
+                            StompReceiveMessage.self,
+                            completion
+                        )
+                    }
                 }
             }
             
@@ -50,13 +77,15 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 case .success(let receiveMessage):
                     guard let self = self else { return }
                     
-                    if let decodableType = ResponseType.self as? Decodable.Type {
+                    if let receiveType = Response.self as? StompReceiveMessage.Type {
+                        completion(.success(receiveMessage as! Response))
+                    } else if let decodableType = Response.self as? Decodable.Type {
                         self.handleDecodable(
                             receiveMessage,
                             ofType: decodableType,
                             completion: completion
                         )
-                    } else if let stringType = ResponseType.self as? String.Type {
+                    } else if let stringType = Response.self as? String.Type {
                         self.handleString(
                             receiveMessage,
                             ofType: stringType,
@@ -84,11 +113,21 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 body: nil
             )
             
-            client.sendAnyMessage(message: message) { error in
-                if let error = error {
+            client.sendAnyMessage(message: message) { [weak self] result in
+                switch result {
+                case .failure(let error):
                     completion(.failure(error))
-                } else {
-                    completion(.success(true as! ResponseType))
+                case .success(let reciptMessage):
+                    if let response = reciptMessage as? Response {
+                        completion(.success(response))
+                    } else {
+                        self?.handleTypeMismatchError(
+                            "Send \(entry.command.name) send success case of request method",
+                            Response.self,
+                            StompReceiveMessage.self,
+                            completion
+                        )
+                    }
                 }
                 
             }
@@ -97,50 +136,50 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
 }
 
 private extension StompProvider {
-    private func handleDecodable<ResponseType>(
+    private func handleDecodable<Response>(
         _ receiveMessage: StompReceiveMessage,
         ofType type: Decodable.Type,
-        completion: @escaping (Result<ResponseType, any Error>) -> Void
+        completion: @escaping (Result<Response, any Error>) -> Void
     ) {
         do {
             let decoded = try receiveMessage.decode(type)
-            if let typedDecoded = decoded as? ResponseType {
+            if let typedDecoded = decoded as? Response {
                 completion(.success(typedDecoded))
             } else {
-                completion(.failure(StompError.decodeFaild(decodingError(ResponseType.self))))
+                completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
             }
         } catch {
             completion(.failure(error))
         }
     }
     
-    private func handleString<ResponseType>(
+    private func handleString<Response>(
         _ receiveMessage: StompReceiveMessage,
         ofType type: String.Type,
-        completion: @escaping (Result<ResponseType, any Error>) -> Void
+        completion: @escaping (Result<Response, any Error>) -> Void
     ) {
         if let data = receiveMessage.body,
-           let decoded = String(data: data, encoding: .utf8) as? ResponseType {
+           let decoded = String(data: data, encoding: .utf8) as? Response {
             completion(.success(decoded))
         } else {
-            completion(.failure(StompError.decodeFaild(decodingError(ResponseType.self))))
+            completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
         }
     }
     
-    private func handleData<ResponseType>(
+    private func handleData<Response>(
         _ receiveMessage: StompReceiveMessage,
-        completion: @escaping (Result<ResponseType, any Error>) -> Void
+        completion: @escaping (Result<Response, any Error>) -> Void
     ) {
-        if let response = receiveMessage.body as? ResponseType {
+        if let response = receiveMessage.body as? Response {
             completion(.success(response))
         } else {
-            completion(.failure(StompError.decodeFaild(decodingError(ResponseType.self))))
+            completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
         }
     }
 }
 
 extension StompProvider {
-    var commandMappingError: String {
+    private var commandMappingError: String {
         """
         Library error: The Stomp command protocol is not valid.
         Please consult the library developer for assistance.
@@ -148,8 +187,25 @@ extension StompProvider {
         """
     }
     
-    func decodingError(_ type: Any.Type) -> String {
-        return "Received message body does not match the ResponseType (\(type.self))"
+    private func decodingError(_ type: Any.Type) -> String {
+        """
+        Received message body does not match the ResponseType (\(type.self))
+        """
+    }
+    
+    private func handleTypeMismatchError<Response>(
+        _ closureName: String,
+        _ expectedType: Any.Type,
+        _ tryType: Any.Type,
+        _ completion: @escaping (Result<Response, any Error>) -> Void
+    ) {
+            let error = StompError.responseTypeMismatch(
+                """
+                \(closureName) expected a \(expectedType.self) \
+                type response, but responseType is \(tryType.self)
+                """
+            )
+            completion(.failure(error))
     }
 }
 

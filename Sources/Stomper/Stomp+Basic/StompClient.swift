@@ -49,12 +49,21 @@ public final class StompClient: NSObject, StompProtocol {
         super.init()
     }
     
+    /// - Warning: You must send a `CONNECT` frame before sending a`SEND` frame.
     public func sendAnyMessage(
         message: StompAnyMessage,
-        _ completion: @escaping ((any Error)?) -> Void
+        _ completion: @escaping ReceiptCompletionType
     ) {
-        socketConnectIfNeeded(completion) // 커넥트 받는거 확인하고 send 해야하나?
-        websocketClient.sendMessage(message.toFrame(), completion)
+        socketConnectIfNeeded() { _ in } // 커넥트 받는거 확인하고 send 해야하나?
+        websocketClient.sendMessage(message.toFrame()) { _ in }
+        
+        if let receiptID = message.headers["receipt"] {
+            let receiptCompletion = ReceiptCompletion(
+                completion: completion,
+                receiptID: receiptID
+            )
+            receiptCompletions[receiptID] = receiptCompletion
+        }
     }
     
     public func connect(
@@ -320,13 +329,11 @@ private extension StompClient {
         }
         
         if let receiptID = message.headers["receipt-id"] {
-            let executeReceiptCompletions = self.receiptCompletions
-                .filter { key, value in
-                    key == receiptID
-                }
-            executeReceiptCompletions.forEach { _, receiptCompletion in
+            if let receiptCompletion = self.receiptCompletions[receiptID]  {
                 receiptCompletion.completion(.success(message))
             }
+            
+            receiptCompletions.removeValue(forKey: receiptID)
         }
     }
     
