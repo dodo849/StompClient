@@ -8,8 +8,20 @@
 import Foundation
 
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
+    public typealias RetryCompletion = () -> Void
+    public typealias RequestID = UUID
+    
     private let client: StompClient
+    
+    // Intercepter
     private var intercepters: [Intercepter] = []
+    
+    // Retry
+    #warning("Not support yet")
+    private var lastRetryID: RequestID?
+    private var retryCount: [RequestID: Int] = [:]
+    private var retryInterval: [RequestID: TimeInterval] = [:]
+    private var retryCompletion: [RequestID: RetryCompletion] = [:]
     
     public init() {
         self.client = StompClient(url: Entry.baseURL)
@@ -20,11 +32,25 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         entry: Entry,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
-        let interceptedEntry = intercepters.reduce(entry) { $1.intercept($0) }
+        let group = DispatchGroup()
+        var interceptedEntry = entry
         
-        interceptedEntry.headers.addHeaders(entry.destinationHeader)
+        for intercepter in intercepters {
+            group.enter()
+            intercepter.execute(interceptedEntry) { newEntry in
+                interceptedEntry = newEntry
+                group.leave()
+            }
+        }
         
-        return performRequest(entry: interceptedEntry, completion)
+        group.notify(queue: .global()) {
+            interceptedEntry.headers.addHeaders(entry.destinationHeader)
+            let newRequestID = UUID()
+            self.performRequest(
+                entry: interceptedEntry,
+                completion
+            )
+        }
     }
     
     /// Send the request to the actual client
@@ -137,7 +163,28 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             }
         }
     }
-}
+    
+    #warning("Not support yet")
+    private func handleRetry<Response>(
+        requestID: RequestID,
+        entry: Entry,
+        completion: @escaping (Result<Response, any Error>) -> Void,
+        error: Error
+    ) {
+        let retriesLeft = retryCount[requestID] ?? 0
+        if retriesLeft > 0 {
+            retryCount[requestID] = retriesLeft - 1
+            let interval = retryInterval[requestID] ?? 1.0
+            
+            DispatchQueue.global().asyncAfter(deadline: .now() + interval) { [weak self] in
+                self?.performRequest(
+                    entry: entry, completion
+                )
+            }
+        } else {
+            completion(.failure(error))
+        }
+    }}
 
 private extension StompProvider {
     private func handleDecodable<Response>(
@@ -223,6 +270,23 @@ public extension StompProvider {
 public extension StompProvider {
     func intercept(_ intercepters: [Intercepter]) -> Self {
         self.intercepters = intercepters
+        return self
+    }
+}
+
+public extension StompProvider {
+#warning("Not support yet")
+    /// Not Support yet
+    func retry(
+        count: Int,
+        interval: TimeInterval = 0.0,
+        completion: @escaping RetryCompletion
+    ) -> Self {
+        let newID = UUID()
+        self.lastRetryID = newID
+        self.retryCount[newID] = count
+        self.retryInterval[newID] = interval
+        self.retryCompletion[newID] = completion
         return self
     }
 }

@@ -14,9 +14,12 @@ public struct TokenIntercepter: Intercepter {
         self.token = token
     }
     
-    public func intercept<E: EntryType>(_ entry: E) -> E {
+    public func execute<E: EntryType>(
+        _ entry: E,
+        completion: @escaping (E) -> Void
+    ) {
         let tokenHeader = ["Authorization": "Bearer \(token)"]
         entry.headers.addHeaders(tokenHeader)
-        return entry
+        completion(entry)
     }
 }

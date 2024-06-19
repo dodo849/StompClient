@@ -8,5 +8,19 @@
 import Foundation
 
 public protocol Intercepter {
-    func intercept<E: EntryType>(_ entry: E) -> E
+    func execute<E: EntryType>(
+        _ entry: E,
+        completion: @escaping (E) -> Void
+    )
+    
+//    func retry<E: EntryType>(
+//        _ entry: E,
+//        dueTo error: Error,
+//        completion: @escaping (EntryRetry) -> Void
+//    )
+}
+
+public enum EntryRetry {
+    case retry(count: Int, interval: TimeInterval)
+    case none
 }
