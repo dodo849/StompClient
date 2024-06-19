@@ -11,8 +11,8 @@ public struct TokenIntercepter: Intercepter {
     let token: String
     
     public func intercept<E: EntryType>(_ entry: E) -> E {
-        var newEntry = entry
-        newEntry.addHeader(["Authorization": "Bearer \(token)"])
-        return newEntry
+        let tokenHeader = ["Authorization": "Bearer \(token)"]
+        entry.headers?.addHeaders(tokenHeader)
+        return entry
     }
 }

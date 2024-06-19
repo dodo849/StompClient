@@ -9,7 +9,7 @@ import Foundation
 
 extension StompCommand {
     func headers(
-        _ additionalHeaders: [String: String] = [:]
+        _ additionalHeaders: [String: String]? = [:]
     ) -> [String: String] {
         let mirror = Mirror(reflecting: self)
         var headers: [String: String] = [:]
@@ -38,7 +38,14 @@ extension StompCommand {
             }
         } 
         
-        let mergedHeaders = headers.merging(additionalHeaders) { (_, explicit) in explicit }
+        
+        let mergedHeaders: [String: String] = {
+            if let additionalHeaders = additionalHeaders {
+                headers.merging(additionalHeaders) { (_, explicit) in explicit }
+            } else {
+                headers
+            }
+        }()
         
         return mergedHeaders
     }

@@ -22,7 +22,7 @@ public protocol EntryType {
     var body: RequestBodyType { get }
     
     /// Additional headers beyond those specified by STOMP
-    var headers: [String: String] { get set }
+    var headers: StompEntryHeaders? { get }
 }
 
 extension EntryType {
@@ -31,15 +31,6 @@ extension EntryType {
             return ["destination": path]
         } else {
             return [:]
-        }
-    }
-}
-
-extension EntryType {
-    /// Mutating function for Interceptor to add headers
-    mutating func addHeader(_ additionalHeader: [String: String]) {
-        for (key, value) in additionalHeader {
-            headers[key] = value
         }
     }
 }
