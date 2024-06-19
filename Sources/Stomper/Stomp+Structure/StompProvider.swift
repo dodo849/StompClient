@@ -8,8 +8,9 @@
 import Foundation
 
 public extension StompProvider {
-    func intercept(_ intercepters: [Intercepter]) {
+    func intercept(_ intercepters: [Intercepter]) -> Self {
         self.intercepters = intercepters
+        return self
     }
 }
 
