@@ -30,7 +30,14 @@ public protocol StompProviderProtocol {
     )
     
     /**
-     Enables logging for the socket level log .
+     Enables logging for the socket level log.
+     
+     - Note: Use logging during debugging phases only.
      */
-    func enableLogging()
+    func enableLogging() -> Self 
+    
+    /** 
+     Set the interceptors for the StompProvider.
+     */
+    func intercept(_ intercepters: [Intercepter]) -> Self
 }

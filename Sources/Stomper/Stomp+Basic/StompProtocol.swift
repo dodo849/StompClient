@@ -21,7 +21,7 @@ public protocol StompProtocol {
     )
     
     /**
-     Connects to the STOMP server.
+     Connects to the STOMP server and sends a CONNECT frame.
      
      - Parameters:
         - acceptVersion: The STOMP protocol version the client supports. Default is "1.2".

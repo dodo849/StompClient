@@ -7,15 +7,7 @@
 
 import Foundation
 
-public extension StompProvider {
-    func intercept(_ intercepters: [Intercepter]) -> Self {
-        self.intercepters = intercepters
-        return self
-    }
-}
-
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
-    
     private let client: StompClient
     private var intercepters: [Intercepter] = []
     
@@ -36,7 +28,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     }
     
     /// Send the request to the actual client
-    public func performRequest<Response>(
+    private func performRequest<Response>(
         entry: Entry,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
@@ -222,7 +214,15 @@ extension StompProvider {
 }
 
 public extension StompProvider {
-    func enableLogging() {
+    func enableLogging() -> Self {
         self.client.enableLogging()
+        return self
+    }
+}
+
+public extension StompProvider {
+    func intercept(_ intercepters: [Intercepter]) -> Self {
+        self.intercepters = intercepters
+        return self
     }
 }
