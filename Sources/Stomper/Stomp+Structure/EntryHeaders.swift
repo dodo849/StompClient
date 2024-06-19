@@ -10,7 +10,7 @@ import Foundation
 public class EntryHeaders {
     var dict: [String: String]
     
-    init(_ headers: [String : String]) {
+    public init(_ headers: [String : String]) {
         self.dict = headers
     }
     
