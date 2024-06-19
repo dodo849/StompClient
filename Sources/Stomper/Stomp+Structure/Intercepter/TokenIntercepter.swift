@@ -12,7 +12,7 @@ public struct TokenIntercepter: Intercepter {
     
     public func intercept<E: EntryType>(_ entry: E) -> E {
         let tokenHeader = ["Authorization": "Bearer \(token)"]
-        entry.headers?.addHeaders(tokenHeader)
+        entry.headers.addHeaders(tokenHeader)
         return entry
     }
 }
