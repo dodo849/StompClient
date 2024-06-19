@@ -39,5 +39,5 @@ public protocol StompProviderProtocol {
     /** 
      Set the interceptors for the StompProvider.
      */
-    func intercept(_ intercepters: [Intercepter]) -> Self
+    func intercept(_ intercepter: Interceptor) -> Self
 }

@@ -1,6 +1,6 @@
 //
-//  File.swift
-//  
+//  StompProvider.swift
+//
 //
 //  Created by DOYEON LEE on 6/14/24.
 //
@@ -8,20 +8,9 @@
 import Foundation
 
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
-    public typealias RetryCompletion = () -> Void
-    public typealias RequestID = UUID
-    
     private let client: StompClient
-    
-    // Intercepter
-    private var intercepters: [Intercepter] = []
-    
-    // Retry
-    #warning("Not support yet")
-    private var lastRetryID: RequestID?
-    private var retryCount: [RequestID: Int] = [:]
-    private var retryInterval: [RequestID: TimeInterval] = [:]
-    private var retryCompletion: [RequestID: RetryCompletion] = [:]
+    private let decodeHelper = DecodeHelper()
+    private var interceptor: Interceptor? = nil
     
     public init() {
         self.client = StompClient(url: Entry.baseURL)
@@ -32,24 +21,20 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         entry: Entry,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
-        let group = DispatchGroup()
-        var interceptedEntry = entry
-        
-        for intercepter in intercepters {
-            group.enter()
-            intercepter.execute(interceptedEntry) { newEntry in
-                interceptedEntry = newEntry
-                group.leave()
-            }
-        }
-        
-        group.notify(queue: .global()) {
+        let handleRequest: (Entry) -> Void = { interceptedEntry in
             interceptedEntry.headers.addHeaders(entry.destinationHeader)
-            let newRequestID = UUID()
             self.performRequest(
                 entry: interceptedEntry,
                 completion
             )
+        }
+
+        if let interceptor = interceptor {
+            interceptor.execute(entry: entry) { interceptedEntry in
+                handleRequest(interceptedEntry)
+            }
+        } else {
+            handleRequest(entry)
         }
     }
     
@@ -62,7 +47,11 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         case .connect:
             client.connect() { [weak self] error in
                 if let error = error {
-                    completion(.failure(error))
+                    self?.handleRetry(
+                        entry: entry,
+                        error: error,
+                        completion: completion
+                    )
                 } else {
                     if let response = "Connect success" as? Response {
                         completion(.success(response))
@@ -84,7 +73,11 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             ) { [weak self] result in
                 switch result {
                 case .failure(let error):
-                    completion(.failure(error))
+                    self?.handleRetry(
+                        entry: entry,
+                        error: error,
+                        completion: completion
+                    )
                 case .success(let reciptMessage):
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
@@ -110,26 +103,30 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     if let receiveType = Response.self as? StompReceiveMessage.Type {
                         completion(.success(receiveMessage as! Response))
                     } else if let decodableType = Response.self as? Decodable.Type {
-                        self.handleDecodable(
+                        self.decodeHelper.handleDecodable(
                             receiveMessage,
                             ofType: decodableType,
                             completion: completion
                         )
                     } else if let stringType = Response.self as? String.Type {
-                        self.handleString(
+                        self.decodeHelper.handleString(
                             receiveMessage,
                             ofType: stringType,
                             completion: completion
                         )
                     } else {
-                        self.handleData(
+                        self.decodeHelper.handleData(
                             receiveMessage,
                             completion: completion
                         )
                     }
                     
                 case .failure(let error):
-                    completion(.failure(error))
+                    self?.handleRetry(
+                        entry: entry,
+                        error: error,
+                        completion: completion
+                    )
                 }
             }
             
@@ -146,7 +143,11 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             client.sendAnyMessage(message: message) { [weak self] result in
                 switch result {
                 case .failure(let error):
-                    completion(.failure(error))
+                    self?.handleRetry(
+                        entry: entry,
+                        error: error,
+                        completion: completion
+                    )
                 case .success(let reciptMessage):
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
@@ -164,69 +165,43 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         }
     }
     
-    #warning("Not support yet")
     private func handleRetry<Response>(
-        requestID: RequestID,
         entry: Entry,
-        completion: @escaping (Result<Response, any Error>) -> Void,
-        error: Error
+        error: Error,
+        completion: @escaping (Result<Response, any Error>) -> Void
     ) {
-        let retriesLeft = retryCount[requestID] ?? 0
-        if retriesLeft > 0 {
-            retryCount[requestID] = retriesLeft - 1
-            let interval = retryInterval[requestID] ?? 1.0
+        guard let interceptor = interceptor else {
+            completion(.failure(error))
+            return
+        }
+        
+        interceptor.retry(
+            entry: entry,
+            error: error
+        ) { [weak self] retryEntry, retryType in
+            guard let self = self else {
+                completion(.failure(error))
+                return
+            }
             
-            DispatchQueue.global().asyncAfter(deadline: .now() + interval) { [weak self] in
-                self?.performRequest(
-                    entry: entry, completion
-                )
+            switch retryType {
+            case .retry:
+                self.performRequest(entry: retryEntry, completion)
+                
+            case .delayedRetry(let delay):
+                DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
+                    self.performRequest(entry: retryEntry, completion)
+                }
+                
+            case .doNotRetry:
+                completion(.failure(error))
+                
+            case .doNotRetryWithError(let retryError):
+                completion(.failure(retryError))
             }
-        } else {
-            completion(.failure(error))
-        }
-    }}
-
-private extension StompProvider {
-    private func handleDecodable<Response>(
-        _ receiveMessage: StompReceiveMessage,
-        ofType type: Decodable.Type,
-        completion: @escaping (Result<Response, any Error>) -> Void
-    ) {
-        do {
-            let decoded = try receiveMessage.decode(type)
-            if let typedDecoded = decoded as? Response {
-                completion(.success(typedDecoded))
-            } else {
-                completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
-            }
-        } catch {
-            completion(.failure(error))
         }
     }
     
-    private func handleString<Response>(
-        _ receiveMessage: StompReceiveMessage,
-        ofType type: String.Type,
-        completion: @escaping (Result<Response, any Error>) -> Void
-    ) {
-        if let data = receiveMessage.body,
-           let decoded = String(data: data, encoding: .utf8) as? Response {
-            completion(.success(decoded))
-        } else {
-            completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
-        }
-    }
-    
-    private func handleData<Response>(
-        _ receiveMessage: StompReceiveMessage,
-        completion: @escaping (Result<Response, any Error>) -> Void
-    ) {
-        if let response = receiveMessage.body as? Response {
-            completion(.success(response))
-        } else {
-            completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
-        }
-    }
 }
 
 extension StompProvider {
@@ -238,11 +213,11 @@ extension StompProvider {
         """
     }
     
-    private func decodingError(_ type: Any.Type) -> String {
-        """
-        Received message body does not match the ResponseType (\(type.self))
-        """
-    }
+//    private func decodingError(_ type: Any.Type) -> String {
+//        """
+//        Received message body does not match the ResponseType (\(type.self))
+//        """
+//    }
     
     private func handleTypeMismatchError<Response>(
         _ closureName: String,
@@ -268,25 +243,8 @@ public extension StompProvider {
 }
 
 public extension StompProvider {
-    func intercept(_ intercepters: [Intercepter]) -> Self {
-        self.intercepters = intercepters
-        return self
-    }
-}
-
-public extension StompProvider {
-#warning("Not support yet")
-    /// Not Support yet
-    func retry(
-        count: Int,
-        interval: TimeInterval = 0.0,
-        completion: @escaping RetryCompletion
-    ) -> Self {
-        let newID = UUID()
-        self.lastRetryID = newID
-        self.retryCount[newID] = count
-        self.retryInterval[newID] = interval
-        self.retryCompletion[newID] = completion
+    func intercept(_ intercepter: Interceptor) -> Self {
+        self.interceptor = intercepter
         return self
     }
 }
