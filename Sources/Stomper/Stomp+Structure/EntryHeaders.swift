@@ -23,7 +23,7 @@ public class EntryHeaders {
     /// - Warning: If a header with the same key already exists, it will be overwritten.
     ///
     /// - Parameter additionalHeaders: Additional headers to add.
-    func addHeaders(_ additionalHeaders: [String: String]) {
+    public func addHeaders(_ additionalHeaders: [String: String]) {
         for (key, value) in additionalHeaders {
             dict[key] = value
         }
@@ -36,7 +36,7 @@ public class EntryHeaders {
     /// - Parameters:
     ///   - key: The key of the header to add.
     ///   - value: The value of the header to add.
-    func addHeader(key: String, value: String) {
+    public func addHeader(key: String, value: String) {
         dict[key] = value
     }
 }
