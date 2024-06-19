@@ -22,7 +22,7 @@ public protocol EntryType {
     var body: EntryRequestBodyType { get }
     
     /// Additional headers beyond those specified by STOMP
-    var headers: EntryHeaders? { get }
+    var headers: EntryHeaders { get }
 }
 
 extension EntryType {

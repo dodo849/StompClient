@@ -29,9 +29,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     ) {
         let interceptedEntry = intercepters.reduce(entry) { $1.intercept($0) }
         
-        if interceptedEntry.headers != nil {
-            interceptedEntry.headers?.addHeaders(entry.destinationHeader)
-        }
+        interceptedEntry.headers.addHeaders(entry.destinationHeader)
         
         return performRequest(entry: interceptedEntry, completion)
     }
@@ -62,7 +60,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .send:
             client.send(
-                headers: entry.command.headers(entry.headers?.dict),
+                headers: entry.command.headers(entry.headers.dict),
                 body: entry.body.toStompBody()
             ) { [weak self] result in
                 switch result {
@@ -84,7 +82,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .subscribe:
             client.subscribe(
-                headers: entry.command.headers(entry.headers?.dict)
+                headers: entry.command.headers(entry.headers.dict)
             ) { [weak self] result in
                 switch result {
                 case .success(let receiveMessage):
@@ -122,7 +120,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             }
             let message = StompAnyMessage(
                 command: command,
-                headers: entry.command.headers(entry.headers?.dict),
+                headers: entry.command.headers(entry.headers.dict),
                 body: nil
             )
             

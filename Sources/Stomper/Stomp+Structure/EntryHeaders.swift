@@ -20,3 +20,9 @@ public class EntryHeaders {
         }
     }
 }
+
+extension EntryHeaders {
+    public static var empty: EntryHeaders {
+        return EntryHeaders([:])
+    }
+}
