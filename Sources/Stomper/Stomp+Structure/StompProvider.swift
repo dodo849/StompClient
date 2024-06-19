@@ -18,12 +18,14 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     
     /// A proxy function for executing interceptors and merging additional headers
     public func request<Response>(
+        of: Response.Type,
         entry: Entry,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
         let handleRequest: (Entry) -> Void = { interceptedEntry in
             interceptedEntry.headers.addHeaders(entry.destinationHeader)
             self.performRequest(
+                of: Response.self,
                 entry: interceptedEntry,
                 completion
             )
@@ -40,6 +42,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     
     /// Send the request to the actual client
     private func performRequest<Response>(
+        of: Response.Type,
         entry: Entry,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
@@ -131,7 +134,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             }
             
         default:
-            guard let command = StompCommandType(rawValue: entry.command.name) else {
+            guard let command = StompRequestCommand(rawValue: entry.command.name) else {
                 fatalError(commandMappingError)
             }
             let message = StompAnyMessage(
@@ -186,11 +189,11 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
             switch retryType {
             case .retry:
-                self.performRequest(entry: retryEntry, completion)
+                self.performRequest(of: Response.self, entry: retryEntry, completion)
                 
             case .delayedRetry(let delay):
                 DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
-                    self.performRequest(entry: retryEntry, completion)
+                    self.performRequest(of: Response.self, entry: retryEntry, completion)
                 }
                 
             case .doNotRetry:

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum StompCommandType: String {
+public enum StompRequestCommand: String {
     case connect = "CONNECT"
     case subscribe = "SUBSCRIBE"
     case send = "SEND"
@@ -22,7 +22,7 @@ public enum StompCommandType: String {
 
 
 protocol StompRequestMessage {
-    var command: StompCommandType { get }
+    var command: StompRequestCommand { get }
     var headers: [String: String] { get }
     var body: StompBody? { get }
     
@@ -65,12 +65,12 @@ extension StompRequestMessage {
 }
 
 public struct StompAnyMessage: StompRequestMessage {
-    let command: StompCommandType
+    let command: StompRequestCommand
     let headers: [String: String]
     var body: StompBody? = nil
     
     init(
-        command: StompCommandType,
+        command: StompRequestCommand,
         headers: [String: String],
         body: StompBody?
     ) {
@@ -81,7 +81,7 @@ public struct StompAnyMessage: StompRequestMessage {
 }
 
 struct StompConnectMessage: StompRequestMessage {
-    let command: StompCommandType = .connect
+    let command: StompRequestCommand = .connect
     let headers: [String: String]
     var body: StompBody? = nil
     
@@ -101,7 +101,7 @@ struct StompConnectMessage: StompRequestMessage {
 }
 
 struct StompSubscribeMessage: StompRequestMessage {
-    let command: StompCommandType = .subscribe
+    let command: StompRequestCommand = .subscribe
     let headers: [String: String]
     let body: StompBody? = nil
     
@@ -121,7 +121,7 @@ struct StompSubscribeMessage: StompRequestMessage {
 }
 
 struct StompSendMessage: StompRequestMessage {
-    let command: StompCommandType = .send
+    let command: StompRequestCommand = .send
     let headers: [String: String]
     let body: StompBody?
     
@@ -153,7 +153,7 @@ struct StompSendMessage: StompRequestMessage {
 }
 
 struct StompDisconnectMessage: StompRequestMessage {
-    let command: StompCommandType = .disconnect
+    let command: StompRequestCommand = .disconnect
     let headers: [String: String]
     let body: StompBody? = nil
     
@@ -173,7 +173,7 @@ struct StompDisconnectMessage: StompRequestMessage {
 
 // 🔽 Not used yet
 struct StompNackMessage: StompRequestMessage {
-    let command: StompCommandType = .nack
+    let command: StompRequestCommand = .nack
     let headers: [String: String]
     let body: StompBody? = nil
     
@@ -191,7 +191,7 @@ struct StompNackMessage: StompRequestMessage {
 }
 
 struct StompUnsubscribeMessage: StompRequestMessage {
-    let command: StompCommandType = .unsubscribe
+    let command: StompRequestCommand = .unsubscribe
     let headers: [String: String]
     let body: StompBody? = nil
     
@@ -207,7 +207,7 @@ struct StompUnsubscribeMessage: StompRequestMessage {
 }
 
 struct StompBeginMessage: StompRequestMessage {
-    let command: StompCommandType = .begin
+    let command: StompRequestCommand = .begin
     let headers: [String: String]
     let body: StompBody? = nil
     
@@ -223,7 +223,7 @@ struct StompBeginMessage: StompRequestMessage {
 }
 
 struct StompCommitMessage: StompRequestMessage {
-    let command: StompCommandType = .commit
+    let command: StompRequestCommand = .commit
     let headers: [String: String]
     let body: StompBody? = nil
     
@@ -239,7 +239,7 @@ struct StompCommitMessage: StompRequestMessage {
 }
 
 struct StompAbortMessage: StompRequestMessage {
-    let command: StompCommandType = .abort
+    let command: StompRequestCommand = .abort
     let headers: [String: String]
     let body: StompBody? = nil
     
