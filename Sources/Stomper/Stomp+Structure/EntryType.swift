@@ -16,13 +16,13 @@ public protocol EntryType {
     var path: String? { get }
     
     /// STOMP command
-    var command: StompCommand { get }
+    var command: EntryCommand { get }
     
     /// Request body, which can be JSON, String, or Data
-    var body: RequestBodyType { get }
+    var body: EntryRequestBodyType { get }
     
     /// Additional headers beyond those specified by STOMP
-    var headers: StompEntryHeaders? { get }
+    var headers: EntryHeaders? { get }
 }
 
 extension EntryType {

@@ -7,7 +7,7 @@
 
 import Foundation
 
-public class StompEntryHeaders {
+public class EntryHeaders {
     var dict: [String: String]
     
     init(_ headers: [String : String]) {

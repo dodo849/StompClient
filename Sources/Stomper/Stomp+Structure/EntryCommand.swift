@@ -12,7 +12,7 @@ import Foundation
  This follows the STOMP protocol version 1.2.
  For more details, refer to the specification at: https://stomp.github.io/stomp-specification-1.2.html
  */
-public enum StompCommand {
+public enum EntryCommand {
     /// If `acceptVersion` is nil, they will be filled automatically.
     case connect(
         acceptVersion: String? = "1.2",

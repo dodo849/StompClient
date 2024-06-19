@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension StompCommand {
+extension EntryCommand {
     func headers(
         _ additionalHeaders: [String: String]? = [:]
     ) -> [String: String] {

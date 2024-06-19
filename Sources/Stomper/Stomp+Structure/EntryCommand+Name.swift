@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension StompCommand {
+extension EntryCommand {
     var name: String {
         switch self {
         case .connect: "CONNECT"

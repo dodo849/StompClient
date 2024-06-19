@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum RequestBodyType {
+public enum EntryRequestBodyType {
     
     /// A request with no additional data.
     case none
@@ -28,7 +28,7 @@ public enum RequestBodyType {
     case withParameters([String: Any], encoding: ParameterEncoding)
 }
 
-extension RequestBodyType {
+extension EntryRequestBodyType {
     func toStompBody() -> StompBody {
         switch self {
         case .none:
