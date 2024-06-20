@@ -10,7 +10,8 @@ import Foundation
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     private var client: StompClient?
     private let decodeHelper = DecodeHelper()
-//    private var interceptor: Interceptor? = nil
+    /// Store interceptors to pass them during client initialization
+    private var interceptor: Interceptor? = nil
     
     public init() {
         self.client = StompClient(url: Entry.baseURL)
@@ -54,15 +55,13 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
         if client == nil {
-           client = StompClient(url: Entry.baseURL)
+           client = createNewClient()
         }
         
         guard let client = client else {
             completion(.failure(StomperError.clientNotInitialized))
             return
         }
-        
-        let mergedHeaders = entry.additionalHeaders
         
         switch entry.command {
         case .connect:
@@ -258,6 +257,31 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     
 }
 
+public extension StompProvider {
+    private func createNewClient() -> StompClient {
+        let newClient = StompClient(url: Entry.baseURL)
+        if let interceptor = interceptor {
+            newClient.setInterceptor(interceptor)
+        }
+        return newClient
+    }
+    
+    func enableLogging() -> Self {
+        self.client?.enableLogging()
+        return self
+    }
+
+    
+    func intercepted(_ intercepter: Interceptor) -> Self {
+        self.interceptor = intercepter
+        
+        if let client = client {
+            let _ = client.setInterceptor(intercepter)
+        }
+        return self
+    }
+}
+
 extension StompProvider {
     private var commandMappingError: String {
         """
@@ -280,23 +304,5 @@ extension StompProvider {
                 """
             )
             completion(.failure(error))
-    }
-}
-
-public extension StompProvider {
-    func enableLogging() -> Self {
-        self.client?.enableLogging()
-        return self
-    }
-}
-
-public extension StompProvider {
-    func intercept(_ intercepter: Interceptor) -> Self {
-//        self.interceptor = intercepter
-        
-        if let client = client {
-            client.setInterceptor(intercepter)
-        }
-        return self
     }
 }

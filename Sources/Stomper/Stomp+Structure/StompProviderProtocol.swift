@@ -46,7 +46,7 @@ public protocol StompProviderProtocol {
     /** 
      Set the interceptors for the StompProvider.
      */
-    func intercept(_ intercepter: Interceptor) -> Self
+    func intercepted(_ intercepter: Interceptor) -> Self
     
     /**
      Disconnects the STOMP connection.
