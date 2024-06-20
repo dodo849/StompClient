@@ -16,7 +16,7 @@ public protocol StompClientProtocol {
         - completion: A completion handler called when the message is sent or if an error occurs.
      */
     func sendAnyMessage(
-        message: StompAnyMessage,
+        message: StompRequestMessage,
         _ completion: @escaping (Result<StompReceiveMessage, any Error>) -> Void
     )
     

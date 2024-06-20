@@ -163,10 +163,10 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             guard let command = StompRequestCommand(rawValue: entry.command.name) else {
                 fatalError(commandMappingError)
             }
-            let message = StompAnyMessage(
+            let message = StompRequestMessage(
                 command: command,
                 headers: entry.command.headers(entry.additionalHeaders),
-                body: nil
+                body: entry.body.toStompBody()
             )
             
             client.sendAnyMessage(message: message) { [weak self] result in
