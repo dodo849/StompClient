@@ -17,41 +17,10 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         self.client = StompClient(url: Entry.baseURL)
     }
     
-    /// A proxy function for executing interceptors and merging additional headers
+    /// Send the request to the actual client
     public func request<Response>(
         of: Response.Type,
         entry: Entry,
-        _ completion: @escaping (Result<Response, any Error>) -> Void
-    ) {
-//        let handleRequest: (Entry) -> Void = { interceptedEntry in
-//            interceptedEntry.headers.addHeaders(entry.destinationHeader) // FIXME: not working
-//            self.performRequest(
-//                of: Response.self,
-//                entry: interceptedEntry,
-//                completion
-//            )
-//        }
-//
-//        if let interceptor = interceptor {
-//            interceptor.execute(entry: entry) { interceptedEntry in
-//                handleRequest(interceptedEntry)
-//            }
-//        } else {
-//            handleRequest(entry)
-//        }
-        
-        self.performRequest(
-            of: Response.self,
-            entry: entry,
-            completion
-        )
-    }
-    
-    /// Send the request to the actual client
-    private func performRequest<Response>(
-        of: Response.Type,
-        entry: Entry,
-        isRetry: Bool = false,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
         if client == nil {
@@ -71,12 +40,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             ) { [weak self] error in
                 if let error = error {
                     completion(.failure(error))
-//                    self?.handleRetry(
-//                        entry: entry,
-//                        error: error,
-//                        isRetried: isRetry,
-//                        completion: completion
-//                    )
+
                 } else {
                     if let response = "Connect success" as? Response {
                         completion(.success(response))
@@ -99,12 +63,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 switch result {
                 case .failure(let error):
                     completion(.failure(error))
-//                    self?.handleRetry(
-//                        entry: entry,
-//                        error: error,
-//                        isRetried: isRetry,
-//                        completion: completion
-//                    )
+                    
                 case .success(let reciptMessage):
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
@@ -200,62 +159,6 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         client?.disconnect()
         client = nil
     }
-    
-    
-//    private func handleRetry<Response>(
-//        entry: Entry,
-//        error: Error,
-//        isRetried: Bool,
-//        completion: @escaping (Result<Response, any Error>) -> Void
-//    ) {
-//        if isRetried {
-//            completion(.failure(error))
-//            client = nil
-//            return
-//        }
-//        
-//        guard let interceptor = interceptor else {
-//            completion(.failure(error))
-//            return
-//        }
-//        
-//        interceptor.retry(
-//            entry: entry,
-//            error: error
-//        ) { [weak self] retryEntry, retryType in
-//            guard let self = self else {
-//                completion(.failure(error))
-//                return
-//            }
-//            
-//            switch retryType {
-//            case .retry:
-//                self.performRequest(
-//                    of: Response.self,
-//                    entry: retryEntry,
-//                    isRetry: true,
-//                    completion
-//                )
-//                
-//            case .delayedRetry(let delay):
-//                DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
-//                    self.performRequest(
-//                        of: Response.self,
-//                        entry: retryEntry,
-//                        isRetry: true,
-//                        completion
-//                    )
-//                }
-//                
-//            case .doNotRetry:
-//                completion(.failure(error))
-//                
-//            case .doNotRetryWithError(let retryError):
-//                completion(.failure(retryError))
-//            }
-//        }
-//    }
-    
 }
 
 public extension StompProvider {
