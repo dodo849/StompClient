@@ -66,7 +66,8 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         switch entry.command {
         case .connect:
             client.connect(
-                additionalHeaders: entry.additionalHeaders
+                headers: entry.command.headers(entry.additionalHeaders),
+                body: entry.body.toStompBody()
             ) { [weak self] error in
                 if let error = error {
                     completion(.failure(error))

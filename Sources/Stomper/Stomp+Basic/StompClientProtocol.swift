@@ -7,7 +7,7 @@
 
 import Foundation
 
-public protocol StompProtocol {
+public protocol StompClientProtocol {
     /**
      Sends a generic STOMP message.
      
@@ -28,8 +28,8 @@ public protocol StompProtocol {
         - completion: A completion handler called when the connection is established or if an error occurs.
      */
     func connect(
-        acceptVersion: String,
-        additionalHeaders: [String: String],
+        headers: [String: String],
+        body: StompBody?,
         _ completion: @escaping ((any Error)?) -> Void
     )
     

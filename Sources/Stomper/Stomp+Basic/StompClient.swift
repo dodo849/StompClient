@@ -8,7 +8,7 @@
 import Foundation
 import OSLog
 
-public final class StompClient: NSObject, StompProtocol {
+public final class StompClient: NSObject, StompClientProtocol {
     public typealias ReceiveCompletionType = (Result<StompReceiveMessage, any Error>) -> Void
     public typealias ReceiptCompletionType = (Result<StompReceiveMessage, any Error>) -> Void
     
@@ -83,8 +83,32 @@ public final class StompClient: NSObject, StompProtocol {
     }
     
     public func connect(
-        acceptVersion: String = "1.2",
-        additionalHeaders: [String: String] = [:],
+        headers: [String: String],
+        body: StompBody?,
+        _ completion: @escaping ((any Error)?) -> Void
+    ) {
+        guard let host = url.host
+        else { completion(StompError.invalidURLHost); return }
+        
+        let connectMessage = StompAnyMessage(
+            command: .connect,
+            headers: headers,
+            body: body
+        )
+        
+        if let interceptor = interceptor {
+            interceptor.execute(message: connectMessage) { [weak self] interceptedMessage in
+                self?.performConnect(message: interceptedMessage, completion)
+            }
+        } else {
+            performConnect(message: connectMessage, completion)
+        }
+        
+        
+    }
+    
+    private func performConnect(
+        message: StompRequestMessage,
         _ completion: @escaping ((any Error)?) -> Void
     ) {
         socketConnectIfNeeded(completion)
@@ -119,19 +143,7 @@ public final class StompClient: NSObject, StompProtocol {
             }
         }
         
-        guard let host = url.host
-        else { completion(StompError.invalidURLHost); return }
-        
-        // TODO: 정리하기
-        let headers = [
-            "accecpt-version": acceptVersion,
-            "host": host
-        ]
-        
-        let mergedHeaders = headers.merging(additionalHeaders) { (_, new) in new }
-        
-        let connectMessage = StompConnectMessage(headers: mergedHeaders)
-        websocketClient.sendMessage(connectMessage.toFrame(), completion)
+        websocketClient.sendMessage(message.toFrame(), completion)
     }
     
     func performCompletions(_ frameString: String) throws {
