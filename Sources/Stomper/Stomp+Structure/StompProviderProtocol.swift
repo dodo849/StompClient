@@ -47,6 +47,11 @@ public protocol StompProviderProtocol {
     
     /** 
      Set the interceptors for the StompProvider.
+     
+     ```swift
+        let provider = StompProvider<ChatEntry>()
+            .intercepted(StompLoggerInterceptor())
+        ```
      */
     func intercepted(_ intercepter: Interceptor) -> Self
     
@@ -56,5 +61,18 @@ public protocol StompProviderProtocol {
      This will terminate the socket connection and reset all completions.
      */
     func disconnect()
+    
+    
+    /**
+     When the receipt header is absent, it is automatically generated.
+     
+     The default setting is auto-generation on.
+     
+     ```swift
+        let provider = StompProvider<ChatEntry>()
+            .disableReceiptAutoGeneration()
+        ```
+     */
+    func disableReceiptAutoGeneration(_ disabled: Bool) -> Self
 
 }

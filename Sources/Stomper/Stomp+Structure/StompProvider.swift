@@ -12,9 +12,25 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     private let decodeHelper = DecodeHelper()
     /// Store interceptors to pass them during client initialization
     private var interceptor: Interceptor? = nil
+    private var enableReceiptAutoGeneration: Bool = true
     
     public init() {
         self.client = StompClient(url: Entry.baseURL)
+    }
+    
+    private func mergeAndGenerateHeaders(entry: Entry) -> [String: String] {
+        let explicitHeaders = entry.additionalHeaders
+            .merging(entry.destinationHeader) {
+                (current, _) in current
+            }
+        
+        var mergedHeaders = entry.command.headers(explicitHeaders)
+        
+        if enableReceiptAutoGeneration {
+            mergedHeaders["receipt"] = mergedHeaders["receipt"] ?? UUID().uuidString
+        }
+        
+        return mergedHeaders
     }
     
     // Send the request to the actual client
@@ -32,11 +48,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             return
         }
         
-        let explicitHeaders = entry.additionalHeaders
-            .merging(entry.destinationHeader) {
-                (current, _) in current
-            }
-        let mergedHeaders = entry.command.headers(explicitHeaders)
+        var mergedHeaders = mergeAndGenerateHeaders(entry: entry)
         
         switch entry.command {
         case .connect:
@@ -178,6 +190,11 @@ public extension StompProvider {
         if let client = client {
             let _ = client.setInterceptor(intercepter)
         }
+        return self
+    }
+    
+    func disableReceiptAutoGeneration(_ disabled: Bool = false) -> Self {
+        self.enableReceiptAutoGeneration = disabled
         return self
     }
 }

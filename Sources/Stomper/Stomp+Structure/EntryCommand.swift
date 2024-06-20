@@ -19,8 +19,7 @@ public enum EntryCommand {
         host: String,
         login: String? = nil,
         passcode: String? = nil,
-        heartBeat: String? = nil,
-        additionalHeaders: [String: String] = [:] // TODO: Temp
+        heartBeat: String? = nil
     )
     
     /// - Note: This is a server-side frame. It is not recommended for the client to directly send this command to the server
@@ -31,7 +30,7 @@ public enum EntryCommand {
         heartBeat: String? = nil
     )
     
-    /// If `contentType` or `contentLength` is nil, they will be filled automatically.
+    /// If `contentType`,`contentLength` or `receipt`  is nil, they will be filled automatically.
     case send(
         transaction: String? = nil,
         contentType: String? = nil,
