@@ -156,18 +156,18 @@ public final class StompClient: NSObject, StompClientProtocol {
         }
     }
     
-    @available(*, deprecated, message: "Do not use the Stomp client directly; use the `StompProvider` instead")
-    public func send(
-        topic: String,
-        body: StompBody?,
-        receiptID: String? = nil,
-        _ completion: @escaping ReceiveCompletionType
-    ) {
-        let sendMessage = StompSendMessage(destination: topic, body: body)
-        performSend(message: sendMessage)
-    }
+//    @available(*, deprecated, message: "Do not use the Stomp client directly; use the `StompProvider` instead")
+//    public func send(
+//        topic: String,
+//        body: StompBody?,
+//        receiptID: String? = nil,
+//        _ completion: @escaping ReceiveCompletionType
+//    ) {
+//        let sendMessage = StompSendMessage(destination: topic, body: body)
+//        performSend(message: sendMessage)
+//    }
     
-    func send(
+    public func send(
         headers: [String: String],
         body: StompBody?,
         _ completion: @escaping ReceiveCompletionType
@@ -200,34 +200,34 @@ public final class StompClient: NSObject, StompClientProtocol {
         websocketClient.sendMessage(message.toFrame()) { _ in }
     }
     
-    @available(*, deprecated, message: "Do not use the Stomp client directly; use the `StompProvider` instead")
-    public func subscribe(
-        topic: String,
-        id: String? = nil,
-        _ receiveCompletion: @escaping ReceiveCompletionType
-    ) {
-        let subscriptionID: String = {
-            if let id = id {
-                return id
-            } else {
-                return UUID().uuidString
-            }
-        }()
-        
-        let subscribeMessage = StompSubscribeMessage(
-            id: subscriptionID,
-            destination: topic
-        )
-        
-        performSubscribe(
-            id: subscriptionID,
-            topic: topic,
-            message: subscribeMessage, 
-            receiveCompletion
-        )
-    }
+//    @available(*, deprecated, message: "Do not use the Stomp client directly; use the `StompProvider` instead")
+//    public func subscribe(
+//        topic: String,
+//        id: String? = nil,
+//        _ receiveCompletion: @escaping ReceiveCompletionType
+//    ) {
+//        let subscriptionID: String = {
+//            if let id = id {
+//                return id
+//            } else {
+//                return UUID().uuidString
+//            }
+//        }()
+//        
+//        let subscribeMessage = StompSubscribeMessage(
+//            id: subscriptionID,
+//            destination: topic
+//        )
+//        
+//        performSubscribe(
+//            id: subscriptionID,
+//            topic: topic,
+//            message: subscribeMessage, 
+//            receiveCompletion
+//        )
+//    }
     
-    func subscribe(
+    public func subscribe(
         headers inputHeaders: [String: String],
         _ receiveCompletion: @escaping ReceiveCompletionType
     ) {
@@ -276,20 +276,20 @@ public final class StompClient: NSObject, StompClientProtocol {
         }
     }
     
-    @available(*, deprecated, message: "Do not use the Stomp client directly; use the `StompProvider` instead")
-    public func unsubscribe(
-        topic: String,
-        _ completion: @escaping ((any Error)?) -> Void
-    ) {
-        if let id = idByTopic[topic] {
-            let unsubscribeMessage = StompUnsubscribeMessage(id: id)
-            performUnsubscribe(message: unsubscribeMessage, topic: topic, completion: completion)
-        } else {
-            completion(StompError.invalidTopic)
-        }
-    }
+//    @available(*, deprecated, message: "Do not use the Stomp client directly; use the `StompProvider` instead")
+//    public func unsubscribe(
+//        topic: String,
+//        _ completion: @escaping ((any Error)?) -> Void
+//    ) {
+//        if let id = idByTopic[topic] {
+//            let unsubscribeMessage = StompUnsubscribeMessage(id: id)
+//            performUnsubscribe(message: unsubscribeMessage, topic: topic, completion: completion)
+//        } else {
+//            completion(StompError.invalidTopic)
+//        }
+//    }
 
-    func unsubscribe(
+    public func unsubscribe(
         headers: [String: String],
         _ completion: @escaping ((any Error)?) -> Void
     ) {

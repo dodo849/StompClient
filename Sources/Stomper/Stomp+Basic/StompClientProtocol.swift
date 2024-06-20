@@ -43,9 +43,8 @@ public protocol StompClientProtocol {
         - completion: A completion handler called when the receipt for the message is received or if an error occurs.
      */
     func send(
-        topic: String,
+        headers: [String: String],
         body: StompBody?,
-        receiptID: String?,
         _ completion: @escaping (Result<StompReceiveMessage, Error>) -> Void
     )
     
@@ -58,8 +57,7 @@ public protocol StompClientProtocol {
         - receiveCompletion: A completion handler called when a message is received or if an error occurs.
      */
     func subscribe(
-        topic: String,
-        id: String?,
+        headers: [String: String],
         _ receiveCompletion: @escaping (Result<StompReceiveMessage, Error>) -> Void
     )
     
@@ -71,7 +69,7 @@ public protocol StompClientProtocol {
         - completion: A completion handler called when the unsubscription is successful or if an error occurs.
      */
     func unsubscribe(
-        topic: String,
+        headers: [String: String],
         _ completion: @escaping ((any Error)?) -> Void
     )
     
