@@ -44,6 +44,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     private func performRequest<Response>(
         of: Response.Type,
         entry: Entry,
+        isRetry: Bool = false,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
         switch entry.command {
@@ -53,6 +54,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     self?.handleRetry(
                         entry: entry,
                         error: error,
+                        isRetried: isRetry,
                         completion: completion
                     )
                 } else {
@@ -79,6 +81,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     self?.handleRetry(
                         entry: entry,
                         error: error,
+                        isRetried: isRetry,
                         completion: completion
                     )
                 case .success(let reciptMessage):
@@ -128,6 +131,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     self?.handleRetry(
                         entry: entry,
                         error: error,
+                        isRetried: isRetry,
                         completion: completion
                     )
                 }
@@ -149,6 +153,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     self?.handleRetry(
                         entry: entry,
                         error: error,
+                        isRetried: isRetry,
                         completion: completion
                     )
                 case .success(let reciptMessage):
@@ -171,8 +176,14 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     private func handleRetry<Response>(
         entry: Entry,
         error: Error,
+        isRetried: Bool,
         completion: @escaping (Result<Response, any Error>) -> Void
     ) {
+        if isRetried {
+            completion(.failure(error))
+            return
+        }
+        
         guard let interceptor = interceptor else {
             completion(.failure(error))
             return
@@ -189,11 +200,21 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
             switch retryType {
             case .retry:
-                self.performRequest(of: Response.self, entry: retryEntry, completion)
+                self.performRequest(
+                    of: Response.self,
+                    entry: retryEntry,
+                    isRetry: true,
+                    completion
+                )
                 
             case .delayedRetry(let delay):
                 DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
-                    self.performRequest(of: Response.self, entry: retryEntry, completion)
+                    self.performRequest(
+                        of: Response.self,
+                        entry: retryEntry,
+                        isRetry: true,
+                        completion
+                    )
                 }
                 
             case .doNotRetry:
@@ -215,12 +236,6 @@ extension StompProvider {
         For library developer: Please ensure the command spelling is correctly mapped.
         """
     }
-    
-//    private func decodingError(_ type: Any.Type) -> String {
-//        """
-//        Received message body does not match the ResponseType (\(type.self))
-//        """
-//    }
     
     private func handleTypeMismatchError<Response>(
         _ closureName: String,
