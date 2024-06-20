@@ -19,7 +19,8 @@ public enum EntryCommand {
         host: String,
         login: String? = nil,
         passcode: String? = nil,
-        heartBeat: String? = nil
+        heartBeat: String? = nil,
+        additionalHeaders: [String: String] = [:] // TODO: Temp
     )
     
     /// - Note: This is a server-side frame. It is not recommended for the client to directly send this command to the server

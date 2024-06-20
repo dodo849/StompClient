@@ -29,6 +29,7 @@ public protocol StompProtocol {
      */
     func connect(
         acceptVersion: String,
+        additionalHeaders: [String: String],
         _ completion: @escaping ((any Error)?) -> Void
     )
     

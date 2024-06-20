@@ -42,6 +42,8 @@ public final class StompClient: NSObject, StompProtocol {
     /// An ID used to subscribe to the topic. [Topic: ID]
     private var idByTopic: [String: String] = [:]
     private var isSocketConnect: Bool = false
+
+    private var interceptor: Interceptor? = nil
     
     public init(url: URL) {
         self.url = url
@@ -67,7 +69,8 @@ public final class StompClient: NSObject, StompProtocol {
     }
     
     public func connect(
-        acceptVersion accecptVersion: String = "1.2",
+        acceptVersion: String = "1.2",
+        additionalHeaders: [String: String] = [:],
         _ completion: @escaping ((any Error)?) -> Void
     ) {
         socketConnectIfNeeded(completion)
@@ -105,7 +108,15 @@ public final class StompClient: NSObject, StompProtocol {
         guard let host = url.host
         else { completion(StompError.invalidURLHost); return }
         
-        let connectMessage = StompConnectMessage(host: host)
+        // TODO: 정리하기
+        let headers = [
+            "accecpt-version": acceptVersion,
+            "host": host
+        ]
+        
+        let mergedHeaders = headers.merging(additionalHeaders) { (_, new) in new }
+        
+        let connectMessage = StompConnectMessage(headers: mergedHeaders)
         websocketClient.sendMessage(connectMessage.toFrame(), completion)
     }
     
@@ -377,5 +388,9 @@ private extension StompClient {
 public extension StompClient {
     func enableLogging() {
         self.websocketClient.enableLogging()
+    }
+    
+    func setInterceptor(_ intercepter: Interceptor) {
+        self.interceptor = intercepter
     }
 }

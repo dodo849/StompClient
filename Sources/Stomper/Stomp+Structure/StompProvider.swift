@@ -22,22 +22,28 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         entry: Entry,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
-        let handleRequest: (Entry) -> Void = { interceptedEntry in
-            interceptedEntry.headers.addHeaders(entry.destinationHeader)
-            self.performRequest(
-                of: Response.self,
-                entry: interceptedEntry,
-                completion
-            )
-        }
-
-        if let interceptor = interceptor {
-            interceptor.execute(entry: entry) { interceptedEntry in
-                handleRequest(interceptedEntry)
-            }
-        } else {
-            handleRequest(entry)
-        }
+//        let handleRequest: (Entry) -> Void = { interceptedEntry in
+//            interceptedEntry.headers.addHeaders(entry.destinationHeader) // FIXME: not working
+//            self.performRequest(
+//                of: Response.self,
+//                entry: interceptedEntry,
+//                completion
+//            )
+//        }
+//
+//        if let interceptor = interceptor {
+//            interceptor.execute(entry: entry) { interceptedEntry in
+//                handleRequest(interceptedEntry)
+//            }
+//        } else {
+//            handleRequest(entry)
+//        }
+        
+        self.performRequest(
+            of: Response.self,
+            entry: entry,
+            completion
+        )
     }
     
     /// Send the request to the actual client
@@ -58,7 +64,9 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         
         switch entry.command {
         case .connect:
-            client.connect() { [weak self] error in
+            client.connect(
+                additionalHeaders: entry.headers.dict
+            ) { [weak self] error in
                 if let error = error {
                     self?.handleRetry(
                         entry: entry,
@@ -279,6 +287,10 @@ public extension StompProvider {
 public extension StompProvider {
     func intercept(_ intercepter: Interceptor) -> Self {
         self.interceptor = intercepter
+        
+        if let client = client {
+            client.setInterceptor(intercepter)
+        }
         return self
     }
 }
