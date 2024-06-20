@@ -34,9 +34,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         webSocketTask = urlSession?.webSocketTask(with: url)
     }
     
-    func connect(
-        _ completion: @escaping ((any Error)?) -> Void
-    ) {
+    func connect() {
         if webSocketTask == nil {
             createURLSession()
         }
@@ -44,18 +42,16 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     }
     
     func sendMessage(
-        _ message: String,
-        _ completion: @escaping ((any Error)?) -> Void
+        _ message: String
     ) {
         let socketMessage = URLSessionWebSocketTask.Message.string(message)
         webSocketTask?.send(socketMessage) { [weak self] error in
-            self?.log {
-                self?.logger.info("WebSocket send message:\n\(message)")
-            }
             if let error = error {
-                completion(error)
+                self?.logger.error("WebSocket failed to send the message:\n\(message)")
             } else {
-                completion(nil)
+                self?.log {
+                    self?.logger.info("WebSocket successfully sent the message:\n\(message)")
+                }
             }
         }
     }

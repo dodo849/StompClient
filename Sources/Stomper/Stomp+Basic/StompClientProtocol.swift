@@ -7,6 +7,7 @@
 
 import Foundation
 
+/// Client converting WebSocket requests to STOMP behavior
 public protocol StompClientProtocol {
     /**
      Sends a generic STOMP message.
@@ -30,7 +31,7 @@ public protocol StompClientProtocol {
     func connect(
         headers: [String: String],
         body: StompBody?,
-        _ completion: @escaping ((any Error)?) -> Void
+        _ completion: @escaping (Result<Void, Never>) -> Void
     )
     
     /**

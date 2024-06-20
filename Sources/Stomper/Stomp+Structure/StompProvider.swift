@@ -17,7 +17,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         self.client = StompClient(url: Entry.baseURL)
     }
     
-    /// Send the request to the actual client
+    // Send the request to the actual client
     public func request<Response>(
         of: Response.Type,
         entry: Entry,
@@ -37,11 +37,9 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             client.connect(
                 headers: entry.command.headers(entry.additionalHeaders),
                 body: entry.body.toStompBody()
-            ) { [weak self] error in
-                if let error = error {
-                    completion(.failure(error))
-
-                } else {
+            ) { [weak self] result in
+                switch result {
+                case .success():
                     if let response = "Connect success" as? Response {
                         completion(.success(response))
                     } else {

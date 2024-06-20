@@ -11,6 +11,7 @@ import OSLog
 public final class StompClient: NSObject, StompClientProtocol {
     public typealias ReceiveCompletionType = (Result<StompReceiveMessage, any Error>) -> Void
     public typealias ReceiptCompletionType = (Result<StompReceiveMessage, any Error>) -> Void
+    public typealias ConnectCompletionType = (Result<Void, Never>) -> Void
     
     /// A Completion for Stomp 'MESSAGE' command
     fileprivate struct ReceiveCompletion {
@@ -29,8 +30,11 @@ public final class StompClient: NSObject, StompClientProtocol {
         category: "StompClient"
     )
     
+    // MARK: Websocket
     private var websocketClient: WebSocketClient
     private var url: URL
+    
+    // MARK: Completions
     /// Completions for Stomp 'MESSAGE' command
     /// key: topic
     /// value: receive completions
@@ -39,10 +43,15 @@ public final class StompClient: NSObject, StompClientProtocol {
     /// key: Id
     /// value: receipt completion
     private var receiptCompletions: [String: ReceiptCompletion] = [:]
+    /// A Completion for Stomp 'CONNECTED' command
+    private var connectCompletion: ConnectCompletionType?
     /// An ID used to subscribe to the topic. [Topic: ID]
     private var idByTopic: [String: String] = [:]
+    
+    // MARK: Socket state
     private var isSocketConnect: Bool = false
 
+    // MARK: Inerceptor
     private var interceptor: Interceptor? = nil
     
     public init(url: URL) {
@@ -70,8 +79,8 @@ public final class StompClient: NSObject, StompClientProtocol {
         isRetry: Bool = false,
         _ completion: @escaping ReceiptCompletionType
     ) {
-        socketConnectIfNeeded() { _ in } // 커넥트 받는거 확인하고 send 해야하나?
-        websocketClient.sendMessage(message.toFrame()) { _ in }
+        socketConnectIfNeeded()
+        websocketClient.sendMessage(message.toFrame())
         
         if let receiptID = message.headers.dict["receipt"] {
             let receiptCompletion = ReceiptCompletion(
@@ -85,10 +94,18 @@ public final class StompClient: NSObject, StompClientProtocol {
     public func connect(
         headers: [String: String],
         body: StompBody?,
-        _ completion: @escaping ((any Error)?) -> Void
+        _ completion: @escaping ConnectCompletionType
     ) {
         guard let host = url.host
-        else { completion(StompError.invalidURLHost); return }
+        else {
+            logger.error("""
+                        No host in the provided URL.
+                        Check your URL format.\n URL: \(self.url)
+                        """)
+            return
+        }
+        
+        self.connectCompletion = completion
         
         let connectMessage = StompRequestMessage(
             command: .connect,
@@ -98,44 +115,41 @@ public final class StompClient: NSObject, StompClientProtocol {
         
         if let interceptor = interceptor {
             interceptor.execute(message: connectMessage) { [weak self] interceptedMessage in
-                self?.performConnect(message: interceptedMessage, completion)
+                self?.performConnect(message: interceptedMessage)
             }
         } else {
-            performConnect(message: connectMessage, completion)
+            performConnect(message: connectMessage)
         }
         
         
     }
     
     private func performConnect(
-        message: StompRequestMessage,
-        _ completion: @escaping ((any Error)?) -> Void
+        message: StompRequestMessage
     ) {
-        socketConnectIfNeeded(completion)
+        socketConnectIfNeeded()
         websocketClient.receiveMessage() { [weak self] result in
             guard let self = self else { return }
             
             switch result {
-            case .failure(let error):
-                completion(error)
+            case .failure(let error): break // This is handle in Websocket Client
             case .success(let message):
                 switch message {
                 case .string(let text):
                     do {
                         try self.performCompletions(text)
                     } catch {
-                        completion(error) // 이 실패 처리 고민. parse 실패가 connect error로 들어감. (?)
+                        logger.error("Failed to decode string to StompReceiveMessage\n \(error)")
                     }
                 case .data(let data):
                     if let decodedText = String(data: data, encoding: .utf8) {
                         do {
                             try self.performCompletions(decodedText)
                         } catch {
-                            completion(error)
+                            logger.error("Failed to decode string to StompReceiveMessage\n \(error)")
                         }
                     } else {
-                        let decodingError = StompError.decodeFaild("Failed to decode data to string")
-                        completion(decodingError)
+                        logger.error("Failed to decode data to string before converting to StompReceiveMessage")
                     }
                 @unknown default:
                     fatalError()
@@ -143,7 +157,7 @@ public final class StompClient: NSObject, StompClientProtocol {
             }
         }
         
-        websocketClient.sendMessage(message.toFrame(), completion)
+        websocketClient.sendMessage(message.toFrame())
     }
     
     func performCompletions(_ frameString: String) throws {
@@ -186,7 +200,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     private func performSend(
         message: StompRequestMessage
     ){
-        websocketClient.sendMessage(message.toFrame()) { _ in }
+        websocketClient.sendMessage(message.toFrame())
     }
     
     public func subscribe(
@@ -225,7 +239,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         message: StompRequestMessage,
         _ receiveCompletion: @escaping ReceiveCompletionType
     ) {
-        websocketClient.sendMessage(message.toFrame(), { _ in })
+        websocketClient.sendMessage(message.toFrame())
         
         let newCompletion = ReceiveCompletion(
             completion: receiveCompletion,
@@ -265,7 +279,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         topic: String,
         completion: @escaping ((any Error)?) -> Void
     ) {
-        websocketClient.sendMessage(message.toFrame(), completion)
+        websocketClient.sendMessage(message.toFrame())
         receiveCompletions.removeValue(forKey: topic)
         idByTopic.removeValue(forKey: topic)
     }
@@ -277,17 +291,21 @@ public final class StompClient: NSObject, StompClientProtocol {
 }
 
 private extension StompClient {
-    private func socketConnectIfNeeded(
-        _ completion: @escaping ((any Error)?) -> Void
-    ) {
+    private func socketConnectIfNeeded() {
         if !isSocketConnect {
-            websocketClient.connect() { [weak self] error in
-                if let error = error {
-                    completion(error)
-                } else {
-                    self?.isSocketConnect = true
-                }
-            }
+            websocketClient.connect()
+        }
+    }
+    
+    private func connectCompletions(
+        _ message: StompReceiveMessage
+    ) {
+        if message.command != .connected {
+            return
+        }
+        
+        if let connectCompletion = self.connectCompletion {
+            connectCompletion(.success(()))
         }
     }
     
