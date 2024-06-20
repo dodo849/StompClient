@@ -10,7 +10,7 @@ import Foundation
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     private var client: StompClient?
     private let decodeHelper = DecodeHelper()
-    private var interceptor: Interceptor? = nil
+//    private var interceptor: Interceptor? = nil
     
     public init() {
         self.client = StompClient(url: Entry.baseURL)
@@ -62,18 +62,21 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             return
         }
         
+        let mergedHeaders = entry.additionalHeaders
+        
         switch entry.command {
         case .connect:
             client.connect(
-                additionalHeaders: entry.headers.dict
+                additionalHeaders: entry.additionalHeaders
             ) { [weak self] error in
                 if let error = error {
-                    self?.handleRetry(
-                        entry: entry,
-                        error: error,
-                        isRetried: isRetry,
-                        completion: completion
-                    )
+                    completion(.failure(error))
+//                    self?.handleRetry(
+//                        entry: entry,
+//                        error: error,
+//                        isRetried: isRetry,
+//                        completion: completion
+//                    )
                 } else {
                     if let response = "Connect success" as? Response {
                         completion(.success(response))
@@ -90,17 +93,18 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .send:
             client.send(
-                headers: entry.command.headers(entry.headers.dict),
+                headers: entry.command.headers(entry.additionalHeaders),
                 body: entry.body.toStompBody()
             ) { [weak self] result in
                 switch result {
                 case .failure(let error):
-                    self?.handleRetry(
-                        entry: entry,
-                        error: error,
-                        isRetried: isRetry,
-                        completion: completion
-                    )
+                    completion(.failure(error))
+//                    self?.handleRetry(
+//                        entry: entry,
+//                        error: error,
+//                        isRetried: isRetry,
+//                        completion: completion
+//                    )
                 case .success(let reciptMessage):
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
@@ -117,7 +121,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .subscribe:
             client.subscribe(
-                headers: entry.command.headers(entry.headers.dict)
+                headers: entry.command.headers(entry.additionalHeaders)
             ) { [weak self] result in
                 switch result {
                 case .success(let receiveMessage):
@@ -145,12 +149,13 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     }
                     
                 case .failure(let error):
-                    self?.handleRetry(
-                        entry: entry,
-                        error: error,
-                        isRetried: isRetry,
-                        completion: completion
-                    )
+                    completion(.failure(error))
+//                    self?.handleRetry(
+//                        entry: entry,
+//                        error: error,
+//                        isRetried: isRetry,
+//                        completion: completion
+//                    )
                 }
             }
             
@@ -160,19 +165,20 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             }
             let message = StompAnyMessage(
                 command: command,
-                headers: entry.command.headers(entry.headers.dict),
+                headers: entry.command.headers(entry.additionalHeaders),
                 body: nil
             )
             
             client.sendAnyMessage(message: message) { [weak self] result in
                 switch result {
                 case .failure(let error):
-                    self?.handleRetry(
-                        entry: entry,
-                        error: error,
-                        isRetried: isRetry,
-                        completion: completion
-                    )
+                    completion(.failure(error))
+//                    self?.handleRetry(
+//                        entry: entry,
+//                        error: error,
+//                        isRetried: isRetry,
+//                        completion: completion
+//                    )
                 case .success(let reciptMessage):
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
@@ -196,59 +202,59 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     }
     
     
-    private func handleRetry<Response>(
-        entry: Entry,
-        error: Error,
-        isRetried: Bool,
-        completion: @escaping (Result<Response, any Error>) -> Void
-    ) {
-        if isRetried {
-            completion(.failure(error))
-            client = nil
-            return
-        }
-        
-        guard let interceptor = interceptor else {
-            completion(.failure(error))
-            return
-        }
-        
-        interceptor.retry(
-            entry: entry,
-            error: error
-        ) { [weak self] retryEntry, retryType in
-            guard let self = self else {
-                completion(.failure(error))
-                return
-            }
-            
-            switch retryType {
-            case .retry:
-                self.performRequest(
-                    of: Response.self,
-                    entry: retryEntry,
-                    isRetry: true,
-                    completion
-                )
-                
-            case .delayedRetry(let delay):
-                DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
-                    self.performRequest(
-                        of: Response.self,
-                        entry: retryEntry,
-                        isRetry: true,
-                        completion
-                    )
-                }
-                
-            case .doNotRetry:
-                completion(.failure(error))
-                
-            case .doNotRetryWithError(let retryError):
-                completion(.failure(retryError))
-            }
-        }
-    }
+//    private func handleRetry<Response>(
+//        entry: Entry,
+//        error: Error,
+//        isRetried: Bool,
+//        completion: @escaping (Result<Response, any Error>) -> Void
+//    ) {
+//        if isRetried {
+//            completion(.failure(error))
+//            client = nil
+//            return
+//        }
+//        
+//        guard let interceptor = interceptor else {
+//            completion(.failure(error))
+//            return
+//        }
+//        
+//        interceptor.retry(
+//            entry: entry,
+//            error: error
+//        ) { [weak self] retryEntry, retryType in
+//            guard let self = self else {
+//                completion(.failure(error))
+//                return
+//            }
+//            
+//            switch retryType {
+//            case .retry:
+//                self.performRequest(
+//                    of: Response.self,
+//                    entry: retryEntry,
+//                    isRetry: true,
+//                    completion
+//                )
+//                
+//            case .delayedRetry(let delay):
+//                DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
+//                    self.performRequest(
+//                        of: Response.self,
+//                        entry: retryEntry,
+//                        isRetry: true,
+//                        completion
+//                    )
+//                }
+//                
+//            case .doNotRetry:
+//                completion(.failure(error))
+//                
+//            case .doNotRetryWithError(let retryError):
+//                completion(.failure(retryError))
+//            }
+//        }
+//    }
     
 }
 
@@ -286,7 +292,7 @@ public extension StompProvider {
 
 public extension StompProvider {
     func intercept(_ intercepter: Interceptor) -> Self {
-        self.interceptor = intercepter
+//        self.interceptor = intercepter
         
         if let client = client {
             client.setInterceptor(intercepter)

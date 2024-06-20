@@ -14,43 +14,43 @@ struct MultiInterceptor: Interceptor {
         self.interceptors = interceptors
     }
     
-    func execute<E>(
-        entry: E,
-        completion: @escaping (E) -> Void
-    ) where E: EntryType {
+    func execute(
+        message: StompRequestMessage,
+        completion: @escaping (StompRequestMessage) -> Void
+    ) {
         let group = DispatchGroup()
-        var allInterceptedEntry = entry
+        var allInterceptedMessage = message
         
         interceptors.forEach { interceptor in
             group.enter()
-            interceptor.execute(entry: allInterceptedEntry) { newEntry in
-                allInterceptedEntry = newEntry
+            interceptor.execute(message: allInterceptedMessage) { newMessage in
+                allInterceptedMessage = newMessage
                 group.leave()
             }
         }
         
         group.notify(queue: .global()) {
-            completion(allInterceptedEntry)
+            completion(allInterceptedMessage)
         }
     }
     
-    func retry<E>(
-        entry: E,
+    func retry(
+        message: StompRequestMessage,
         error: any Error,
-        completion: @escaping (E, InterceptorRetryType) -> Void
-    ) where E: EntryType {
+        completion: @escaping (StompRequestMessage, InterceptorRetryType) -> Void
+    ) {
         let group = DispatchGroup()
         var shouldRetry = false
         var retryDelay: TimeInterval = 0
         var finalError: Error? = nil
-        var retryEntry: E = entry
+        var retryMessage: StompRequestMessage = message
         
         interceptors.forEach { interceptor in
             group.enter()
-            interceptor.retry(entry: entry, error: error) { newEntry, result in
-                retryEntry = newEntry
+            interceptor.retry(message: message, error: error) { newMessage, retryType in
+                retryMessage = newMessage
                 
-                switch result {
+                switch retryType {
                 case .retry:
                     shouldRetry = true
                 case .delayedRetry(let delay):
@@ -67,15 +67,15 @@ struct MultiInterceptor: Interceptor {
         
         group.notify(queue: .global()) {
             if let finalError = finalError {
-                completion(retryEntry, .doNotRetryWithError(finalError))
+                completion(retryMessage, .doNotRetryWithError(finalError))
             } else if shouldRetry {
                 if retryDelay > 0 {
-                    completion(retryEntry, .delayedRetry(retryDelay))
+                    completion(retryMessage, .delayedRetry(retryDelay))
                 } else {
-                    completion(retryEntry, .retry)
+                    completion(retryMessage, .retry)
                 }
             } else {
-                completion(retryEntry, .doNotRetry)
+                completion(retryMessage, .doNotRetry)
             }
         }
     }

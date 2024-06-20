@@ -1,6 +1,6 @@
 //
-//  StompEntryHeaders.swift
-//  
+//  StompHeaders.swift
+//
 //
 //  Created by DOYEON LEE on 6/19/24.
 //
@@ -8,7 +8,7 @@
 import Foundation
 
 /// A headers used in EntryType.
-public class EntryHeaders {
+public class StompHeaders {
     public var dict: [String: String]
     
     /// Initializes the EntryHeaders object with the provided headers dictionary.
@@ -41,11 +41,11 @@ public class EntryHeaders {
     }
 }
 
-extension EntryHeaders {
+extension StompHeaders {
     /// Provides an empty `EntryHeaders` instance.
     ///
     /// Use this static property when no additional headers need to be specified.
-    public static var empty: EntryHeaders {
-        return EntryHeaders([:])
+    public static var empty: StompHeaders {
+        return StompHeaders([:])
     }
 }

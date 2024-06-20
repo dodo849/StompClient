@@ -21,9 +21,9 @@ public enum StompRequestCommand: String {
 }
 
 
-protocol StompRequestMessage {
+public protocol StompRequestMessage {
     var command: StompRequestCommand { get }
-    var headers: [String: String] { get }
+    var headers: StompHeaders { get }
     var body: StompBody? { get }
     
     func toFrame() -> String
@@ -33,7 +33,7 @@ extension StompRequestMessage {
     public func toFrame() -> String {
         var frame = "\(command.rawValue)\n"
         
-        var updatedHeaders = headers
+        var updatedHeaders = headers.dict
         
         if let body = body {
             updatedHeaders["content-type"] = body.contentType
@@ -65,9 +65,9 @@ extension StompRequestMessage {
 }
 
 public struct StompAnyMessage: StompRequestMessage {
-    let command: StompRequestCommand
-    let headers: [String: String]
-    var body: StompBody? = nil
+    public let command: StompRequestCommand
+    public let headers: StompHeaders
+    public var body: StompBody? = nil
     
     init(
         command: StompRequestCommand,
@@ -75,61 +75,63 @@ public struct StompAnyMessage: StompRequestMessage {
         body: StompBody?
     ) {
         self.command = command
-        self.headers = headers
+        self.headers = StompHeaders(headers)
         self.body = body
     }
 }
 
 struct StompConnectMessage: StompRequestMessage {
     let command: StompRequestCommand = .connect
-    let headers: [String: String]
+    let headers: StompHeaders
     var body: StompBody? = nil
     
     init(
         accecptVersion: String = "1.2",
         host: String
     ) {
-        self.headers = [
+        let headers = [
             "accept-version": accecptVersion,
             "host": host
         ]
+        self.headers = StompHeaders(headers)
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }
 
 struct StompSubscribeMessage: StompRequestMessage {
     let command: StompRequestCommand = .subscribe
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody? = nil
     
     init(
         id: String,
         destination: String
     ) {
-        self.headers = [
+        let headers = [
             "id" : id,
             "destination": destination
         ]
+        self.headers = StompHeaders(headers)
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }
 
 struct StompSendMessage: StompRequestMessage {
     let command: StompRequestCommand = .send
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody?
     
     init(
         destination: String,
         body: StompBody?
     ) {
-        self.headers = {
+        let headers = {
             if let body = body {
                 return [
                     "destination": destination,
@@ -140,6 +142,7 @@ struct StompSendMessage: StompRequestMessage {
                 return ["destination": destination]
             }
         }()
+        self.headers = StompHeaders(headers)
         self.body = body
     }
     
@@ -147,26 +150,26 @@ struct StompSendMessage: StompRequestMessage {
         headers: [String: String],
         body: StompBody? = nil
     ) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
         self.body = body
     }
 }
 
 struct StompDisconnectMessage: StompRequestMessage {
     let command: StompRequestCommand = .disconnect
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody? = nil
     
     init(receipt: String? = nil) {
         if let receipt = receipt {
-            self.headers = ["receipt": receipt]
+            self.headers = StompHeaders(["receipt": receipt])
         } else {
-            self.headers = [:]
+            self.headers = StompHeaders([:])
         }
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }
 
@@ -174,7 +177,7 @@ struct StompDisconnectMessage: StompRequestMessage {
 // 🔽 Not used yet
 struct StompNackMessage: StompRequestMessage {
     let command: StompRequestCommand = .nack
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody? = nil
     
     init(id: String, transaction: String? = nil) {
@@ -182,74 +185,78 @@ struct StompNackMessage: StompRequestMessage {
         if let transaction = transaction {
             headers["transaction"] = transaction
         }
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }
 
 struct StompUnsubscribeMessage: StompRequestMessage {
     let command: StompRequestCommand = .unsubscribe
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody? = nil
     
     init(id: String) {
-        self.headers = [
+        let headers = [
             "id": id
         ]
+        self.headers = StompHeaders(headers)
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }
 
 struct StompBeginMessage: StompRequestMessage {
     let command: StompRequestCommand = .begin
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody? = nil
     
     init(transaction: String) {
-        self.headers = [
+        let headers = [
             "transaction": transaction
         ]
+        self.headers = StompHeaders(headers)
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }
 
 struct StompCommitMessage: StompRequestMessage {
     let command: StompRequestCommand = .commit
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody? = nil
     
     init(transaction: String) {
-        self.headers = [
+        let headers = [
             "transaction": transaction
         ]
+        self.headers = StompHeaders(headers)
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }
 
 struct StompAbortMessage: StompRequestMessage {
     let command: StompRequestCommand = .abort
-    let headers: [String: String]
+    let headers: StompHeaders
     let body: StompBody? = nil
     
     init(transaction: String) {
-        self.headers = [
+        let headers = [
             "transaction": transaction
         ]
+        self.headers = StompHeaders(headers)
     }
     
     init(headers: [String: String]) {
-        self.headers = headers
+        self.headers = StompHeaders(headers)
     }
 }

@@ -1,5 +1,5 @@
 //
-//  Endpoint.swift
+//  EntryType.swift
 //
 //
 //  Created by DOYEON LEE on 6/14/24.
@@ -22,7 +22,7 @@ public protocol EntryType {
     var body: EntryRequestBodyType { get }
     
     /// Additional headers beyond those specified by STOMP
-    var headers: EntryHeaders { get }
+    var additionalHeaders: [String: String] { get }
 }
 
 extension EntryType {

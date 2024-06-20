@@ -56,10 +56,24 @@ public final class StompClient: NSObject, StompProtocol {
         message: StompAnyMessage,
         _ completion: @escaping ReceiptCompletionType
     ) {
+        if let interceptor = interceptor {
+            interceptor.execute(message: message) { [weak self] interceptedMessage in
+                self?.performSendAnyMessage(message: interceptedMessage, completion)
+            }
+        } else {
+            performSendAnyMessage(message: message, completion)
+        }
+    }
+    
+    private func performSendAnyMessage(
+        message: StompRequestMessage,
+        isRetry: Bool = false,
+        _ completion: @escaping ReceiptCompletionType
+    ) {
         socketConnectIfNeeded() { _ in } // 커넥트 받는거 확인하고 send 해야하나?
         websocketClient.sendMessage(message.toFrame()) { _ in }
         
-        if let receiptID = message.headers["receipt"] {
+        if let receiptID = message.headers.dict["receipt"] {
             let receiptCompletion = ReceiptCompletion(
                 completion: completion,
                 receiptID: receiptID
@@ -382,6 +396,57 @@ private extension StompClient {
         )
         
         return stompResponse
+    }
+    
+    private func handleRetry(
+        message: StompRequestMessage,
+        error: Error,
+        isRetried: Bool,
+        completion: @escaping (Result<StompReceiveMessage, any Error>) -> Void
+    ) {
+        if isRetried {
+            completion(.failure(error))
+            return
+        }
+
+        guard let interceptor = interceptor else {
+            completion(.failure(error))
+            return
+        }
+
+        interceptor.retry(
+            message: message,
+            error: error
+        ) { [weak self] retryMessage, retryType in
+            guard let self = self else {
+                completion(.failure(error))
+                return
+            }
+
+            switch retryType {
+            case .retry:
+                self.performSendAnyMessage(
+                    message: retryMessage,
+                    isRetry: true,
+                    completion
+                )
+                
+            case .delayedRetry(let delay):
+                DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
+                    self.performSendAnyMessage(
+                        message: retryMessage,
+                        isRetry: true,
+                        completion
+                    )
+                }
+
+            case .doNotRetry:
+                completion(.failure(error))
+
+            case .doNotRetryWithError(let retryError):
+                completion(.failure(retryError))
+            }
+        }
     }
 }
 
