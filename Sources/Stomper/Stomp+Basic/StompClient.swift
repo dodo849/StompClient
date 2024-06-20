@@ -161,10 +161,8 @@ public final class StompClient: NSObject, StompClientProtocol {
         body: StompBody?,
         _ completion: @escaping ReceiveCompletionType
     ) {
-        guard let _ = headers["destination"] else {
-            completion(.failure(StompError.invalidHeader("Missing 'destination' header")))
-            return
-        }
+        guard let _ = headers["destination"]
+        else { logger.error("Missing 'destination' header"); return }
         
         if let receiptID = headers["receipt"] {
             let receiptCompletion = ReceiptCompletion(

@@ -109,19 +109,16 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     
                 case .failure(let error):
                     completion(.failure(error))
-//                    self?.handleRetry(
-//                        entry: entry,
-//                        error: error,
-//                        isRetried: isRetry,
-//                        completion: completion
-//                    )
                 }
             }
             
         default:
-            guard let command = StompRequestCommand(rawValue: entry.command.name) else {
+            guard let command = StompRequestCommand(
+                rawValue: entry.command.name
+            ) else {
                 fatalError(commandMappingError)
             }
+            
             let message = StompRequestMessage(
                 command: command,
                 headers: entry.command.headers(entry.additionalHeaders),
@@ -132,12 +129,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 switch result {
                 case .failure(let error):
                     completion(.failure(error))
-//                    self?.handleRetry(
-//                        entry: entry,
-//                        error: error,
-//                        isRetried: isRetry,
-//                        completion: completion
-//                    )
+                    
                 case .success(let reciptMessage):
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
