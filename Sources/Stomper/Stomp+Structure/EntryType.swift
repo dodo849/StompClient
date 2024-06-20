@@ -26,7 +26,7 @@ import Foundation
          URL(string: "wws://localhost:8080")!
      }
      
-     var path: String? {
+     var topic: String? {
          switch self {
          case .subscribeChat:
              return "/sub/chat"
@@ -70,8 +70,8 @@ public protocol EntryType {
     /// WebSocket server URL (ws or wss)
     static var baseURL: URL { get }
     
-    /// Path to send the request to, such as a topic or destination
-    var path: String? { get }
+    ///The path of the target to which you want to subscribe or publish the message, corresponding to the `destination` header of the STOMP.
+    var topic: String? { get }
     
     /// STOMP command and native headers
     var command: EntryCommand { get }
@@ -88,8 +88,8 @@ public protocol EntryType {
 extension EntryType {
     /// Convert the
     var destinationHeader: [String: String] {
-        if let path = path {
-            return ["destination": path]
+        if let topic = topic {
+            return ["destination": topic]
         } else {
             return [:]
         }

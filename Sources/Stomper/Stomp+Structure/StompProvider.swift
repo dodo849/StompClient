@@ -32,10 +32,16 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             return
         }
         
+        let explicitHeaders = entry.additionalHeaders
+            .merging(entry.destinationHeader) {
+                (current, _) in current
+            }
+        let mergedHeaders = entry.command.headers(explicitHeaders)
+        
         switch entry.command {
         case .connect:
             client.connect(
-                headers: entry.command.headers(entry.additionalHeaders),
+                headers: mergedHeaders,
                 body: entry.body.toStompBody()
             ) { [weak self] result in
                 switch result {
@@ -55,7 +61,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .send:
             client.send(
-                headers: entry.command.headers(entry.additionalHeaders),
+                headers: mergedHeaders,
                 body: entry.body.toStompBody()
             ) { [weak self] result in
                 switch result {
@@ -78,7 +84,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
         case .subscribe:
             client.subscribe(
-                headers: entry.command.headers(entry.additionalHeaders)
+                headers: mergedHeaders
             ) { [weak self] result in
                 switch result {
                 case .success(let receiveMessage):
@@ -119,7 +125,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             
             let message = StompRequestMessage(
                 command: command,
-                headers: entry.command.headers(entry.additionalHeaders),
+                headers: mergedHeaders,
                 body: entry.body.toStompBody()
             )
             
