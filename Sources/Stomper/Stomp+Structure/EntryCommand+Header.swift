@@ -8,7 +8,7 @@
 import Foundation
 
 extension EntryCommand {
-    func headers(
+    public func headers(
         _ additionalHeaders: [String: String]? = [:]
     ) -> [String: String] {
         let mirror = Mirror(reflecting: self)
