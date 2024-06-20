@@ -148,7 +148,8 @@ public final class StompClient: NSObject, StompClientProtocol {
     
     func performCompletions(_ frameString: String) throws {
         do {
-            let receiveMessage = try toReceiveMessage(frameString)
+            let receiveMessage = try StompReceiveMessage
+                .convertFromFrame(frameString)
             self.executeReceiveCompletions(receiveMessage)
             self.executeReceiptCompletions(receiveMessage)
         } catch {
@@ -325,43 +326,7 @@ private extension StompClient {
             receiptCompletions.removeValue(forKey: receiptID)
         }
     }
-    
-    private func toReceiveMessage(
-        _ frame: String
-    ) throws -> StompReceiveMessage {
-        let lines = frame.split(separator: "\n", omittingEmptySubsequences: false)
-        
-        guard let commandString = lines.first,
-              let command = StompResponseCommand(rawValue: String(commandString)) else {
-            throw StompError.invalidCommand("\(lines.first ?? "") is invalid command")
-        }
-        
-        let splitIndex = lines.firstIndex(where: { $0.isEmpty }) ?? lines.endIndex
-        let headerLines = lines.prefix(upTo: splitIndex)
-        let bodyLines = lines.suffix(from: splitIndex).dropFirst()
-        
-        let headers = headerLines.reduce(into: [String: String]()) { result, line in
-            let parts = line.split(separator: ":", maxSplits: 1)
-            if parts.count == 2 {
-                result[String(parts[0])] = String(parts[1])
-            }
-        }
-        
-        let body = bodyLines
-            .map { $0.replacingOccurrences(of: "\0", with: "") }
-            .joined(separator: "")
-        
-        let stompBody: Data? = body.data(using: .utf8)
-        
-        let stompResponse = StompReceiveMessage(
-            command: command,
-            headers: headers,
-            body: stompBody
-        )
-        
-        return stompResponse
-    }
-    
+
     private func handleRetry(
         message: StompRequestMessage,
         error: Error,
