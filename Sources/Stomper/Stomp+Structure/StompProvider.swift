@@ -8,7 +8,7 @@
 import Foundation
 
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
-    private let client: StompClient
+    private var client: StompClient?
     private let decodeHelper = DecodeHelper()
     private var interceptor: Interceptor? = nil
     
@@ -47,6 +47,15 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         isRetry: Bool = false,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
+        if client == nil {
+           client = StompClient(url: Entry.baseURL)
+        }
+        
+        guard let client = client else {
+            completion(.failure(StomperError.clientNotInitialized))
+            return
+        }
+        
         switch entry.command {
         case .connect:
             client.connect() { [weak self] error in
@@ -173,6 +182,12 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         }
     }
     
+    public func disconnect() {
+        client?.disconnect()
+        client = nil
+    }
+    
+    
     private func handleRetry<Response>(
         entry: Entry,
         error: Error,
@@ -181,6 +196,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     ) {
         if isRetried {
             completion(.failure(error))
+            client = nil
             return
         }
         
@@ -255,7 +271,7 @@ extension StompProvider {
 
 public extension StompProvider {
     func enableLogging() -> Self {
-        self.client.enableLogging()
+        self.client?.enableLogging()
         return self
     }
 }

@@ -47,4 +47,12 @@ public protocol StompProviderProtocol {
      Set the interceptors for the StompProvider.
      */
     func intercept(_ intercepter: Interceptor) -> Self
+    
+    /**
+     Disconnects the STOMP connection.
+     
+     This will terminate the socket connection and reset all completions.
+     */
+    func disconnect()
+
 }
