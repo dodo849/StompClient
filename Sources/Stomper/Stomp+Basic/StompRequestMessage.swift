@@ -29,7 +29,7 @@ public struct StompRequestMessage {
     init(
         command: StompRequestCommand,
         headers: [String: String],
-        body: StompBody?
+        body: StompBody? = nil
     ) {
         self.command = command
         self.headers = StompHeaders(headers)

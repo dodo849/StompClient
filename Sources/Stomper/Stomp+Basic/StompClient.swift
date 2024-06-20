@@ -53,7 +53,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     
     /// - Warning: You must send a `CONNECT` frame before sending a`SEND` frame.
     public func sendAnyMessage(
-        message: StompAnyMessage,
+        message: StompRequestMessage,
         _ completion: @escaping ReceiptCompletionType
     ) {
         if let interceptor = interceptor {
@@ -90,7 +90,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         guard let host = url.host
         else { completion(StompError.invalidURLHost); return }
         
-        let connectMessage = StompAnyMessage(
+        let connectMessage = StompRequestMessage(
             command: .connect,
             headers: headers,
             body: body
@@ -185,7 +185,8 @@ public final class StompClient: NSObject, StompClientProtocol {
             receiptCompletions[receiptID] = receiptCompletion
         }
         
-        let sendMessage = StompSendMessage(
+        let sendMessage = StompRequestMessage(
+            command: .send,
             headers: headers,
             body: body
         )
@@ -195,7 +196,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     
     
     private func performSend(
-        message: StompSendMessage
+        message: StompRequestMessage
     ){
         websocketClient.sendMessage(message.toFrame()) { _ in }
     }
@@ -244,7 +245,8 @@ public final class StompClient: NSObject, StompClientProtocol {
         }()
         headers["id"] = subscriptionID
         
-        let subscribeMessage = StompSubscribeMessage(
+        let subscribeMessage = StompRequestMessage(
+            command: .subscribe,
             headers: headers
         )
         
@@ -259,7 +261,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     private func performSubscribe(
         id: String,
         topic: String,
-        message: StompSubscribeMessage,
+        message: StompRequestMessage,
         _ receiveCompletion: @escaping ReceiveCompletionType
     ) {
         websocketClient.sendMessage(message.toFrame(), { _ in })
@@ -303,12 +305,15 @@ public final class StompClient: NSObject, StompClientProtocol {
             return
         }
         
-        let unsubscribeMessage = StompUnsubscribeMessage(headers: headers)
+        let unsubscribeMessage = StompRequestMessage(
+            command: .unsubscribe,
+            headers: headers
+        )
         performUnsubscribe(message: unsubscribeMessage, topic: topic, completion: completion)
     }
 
     private func performUnsubscribe(
-        message: StompUnsubscribeMessage,
+        message: StompRequestMessage,
         topic: String,
         completion: @escaping ((any Error)?) -> Void
     ) {
