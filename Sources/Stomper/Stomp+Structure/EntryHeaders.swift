@@ -9,7 +9,7 @@ import Foundation
 
 /// A headers used in EntryType.
 public class EntryHeaders {
-    var dict: [String: String]
+    public var dict: [String: String]
     
     /// Initializes the EntryHeaders object with the provided headers dictionary.
     ///
