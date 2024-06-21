@@ -62,12 +62,11 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         webSocketTask?.receive { [weak self] result in
             switch result {
             case .failure(let error):
-                self?.logger.fault("WebSocket receive error message:\n\(error)")
-                completion(.failure(error))
+                self?.logger.fault("WebSocket encountered error:\n\(error)")
             case .success(let message):
                 self?.printReceivedMessage(message)
                 completion(.success(message))
-                self?.receiveMessage(completion)
+                self?.receiveMessage(completion) // For next message
             }
         }
     }
@@ -77,9 +76,9 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     ) {
         switch message {
         case .string(let text):
-            print("WebSocket receive message:\n\(text)")
+            logger.debug("WebSocket receive message:\n\(text)")
         case .data(let data):
-            print("WebSocket receive message:\n\(data)")
+            logger.debug("WebSocket receive message:\n\(data)")
         @unknown default:
             fatalError()
         }
@@ -110,6 +109,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
         self.logger.info("WebSocket try disconnect")
+        self.webSocketTask = nil
     }
 }
 

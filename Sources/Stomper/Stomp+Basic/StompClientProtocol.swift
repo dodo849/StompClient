@@ -30,7 +30,7 @@ public protocol StompClientProtocol {
      */
     func connect(
         headers: [String: String],
-        _ connectCompletion: @escaping (Result<Void, Never>) -> Void
+        _ connectCompletion: @escaping (Result<Void, Error>) -> Void
     )
     
     /**
@@ -58,7 +58,7 @@ public protocol StompClientProtocol {
      */
     func subscribe(
         headers: [String: String],
-        _ receiveCompletion: @escaping (Result<StompReceiveMessage, Error>) -> Void
+        _ receiveCompletion: @escaping (Result<StompReceiveMessage, Never>) -> Void
     )
     
     /**
@@ -79,7 +79,7 @@ public protocol StompClientProtocol {
      */
     func disconnect(
         headers: [String: String],
-        _ receiptCompletion: @escaping (Result<Void, Never>) -> Void
+        _ receiptCompletion: @escaping (Result<Void, Error>) -> Void
     )
     
     func enableLogging()

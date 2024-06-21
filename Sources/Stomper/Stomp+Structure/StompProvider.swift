@@ -233,12 +233,21 @@ extension StompProvider {
         _ tryType: Any.Type,
         _ completion: @escaping (Result<Response, any Error>) -> Void
     ) {
-            let error = StompError.responseTypeMismatch(
+            let error = StomperError.responseTypeMismatch(
                 """
                 \(closureName) expected a \(expectedType.self) \
                 type response, but responseType is \(tryType.self)
                 """
             )
             completion(.failure(error))
+    }
+    
+    private func handleErrorFrame<Response>(
+        receiveMessage: StompReceiveMessage,
+        _ completion: @escaping (Result<Response, any Error>) -> Void
+    ) {
+        completion(.failure(
+            StomperError.receiveErrorFrame(receiveMessage)
+        ))
     }
 }

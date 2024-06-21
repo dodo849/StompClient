@@ -18,7 +18,7 @@ struct DecodeHelper {
             if let typedDecoded = decoded as? Response {
                 completion(.success(typedDecoded))
             } else {
-                completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
+                completion(.failure(StomperError.decodeFailed(decodingError(Response.self))))
             }
         } catch {
             completion(.failure(error))
@@ -34,7 +34,7 @@ struct DecodeHelper {
            let decoded = String(data: data, encoding: .utf8) as? Response {
             completion(.success(decoded))
         } else {
-            completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
+            completion(.failure(StomperError.decodeFailed(decodingError(Response.self))))
         }
     }
     
@@ -45,7 +45,7 @@ struct DecodeHelper {
         if let response = receiveMessage.body as? Response {
             completion(.success(response))
         } else {
-            completion(.failure(StompError.decodeFaild(decodingError(Response.self))))
+            completion(.failure(StomperError.decodeFailed(decodingError(Response.self))))
         }
     }
     

@@ -8,8 +8,7 @@
 import Foundation
 
 public enum InterceptorRetryType {
-    case retry(count: Int = 1)
-    case delayedRetry(count: Int = 1, delay: TimeInterval)
+    case retry(count: Int = 1, delay: TimeInterval = 0.0)
     case doNotRetry
     case doNotRetryWithError(Error)
 }
@@ -17,14 +16,14 @@ public enum InterceptorRetryType {
 extension InterceptorRetryType {
     var retryRequired: Bool {
         switch self {
-        case .retry, .delayedRetry: return true
+        case .retry: return true
         default: return false
         }
     }
 
     var delay: TimeInterval? {
         switch self {
-        case let .delayedRetry(_, delay): return delay
+        case let .retry(_, delay): return delay
         default: return nil
         }
     }
