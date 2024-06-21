@@ -17,6 +17,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         isDisabled: true
     )
     
+    /// If the socket is closed, it is nil.
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession?
     private let url: URL
@@ -27,6 +28,8 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         super.init()
         createURLSession()
     }
+    
+//    private let connectionSemaphore = DispatchSemaphore(value: 0)
     
     private func createURLSession() {
         let configuration = URLSessionConfiguration.default
@@ -44,7 +47,14 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     func sendMessage(
         _ message: String
     ) {
+        if webSocketTask == nil {
+            connect()
+        }
+        
         let socketMessage = URLSessionWebSocketTask.Message.string(message)
+        self.logger.debug("""
+            WebSocket try send the message:\n\(message)\n
+            """)
         webSocketTask?.send(socketMessage) { [weak self] error in
             if let error = error {
                 self?.logger.error("""
@@ -86,6 +96,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     
     func disconnect() {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
+        self.webSocketTask = nil
     }
     
     // MARK: URLSessionWebSocketDelegate methods
