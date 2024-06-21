@@ -30,8 +30,7 @@ public protocol StompClientProtocol {
      */
     func connect(
         headers: [String: String],
-        body: StompBody?,
-        _ completion: @escaping (Result<Void, Never>) -> Void
+        _ connectCompletion: @escaping (Result<Void, Never>) -> Void
     )
     
     /**
@@ -46,7 +45,7 @@ public protocol StompClientProtocol {
     func send(
         headers: [String: String],
         body: StompBody?,
-        _ completion: @escaping (Result<StompReceiveMessage, Error>) -> Void
+        _ receiptCompletion: @escaping (Result<StompReceiveMessage, Error>) -> Void
     )
     
     /**
@@ -70,12 +69,18 @@ public protocol StompClientProtocol {
         - completion: A completion handler called when the unsubscription is successful or if an error occurs.
      */
     func unsubscribe(
-        headers: [String: String],
-        _ completion: @escaping ((any Error)?) -> Void
+        headers: [String: String]
     )
     
     /**
      Disconnects from the STOMP server.
+     
+     올바르게 종료되면 클로저가 실행되고 websocket connect가 종료됨.
      */
-    func disconnect()
+    func disconnect(
+        headers: [String: String],
+        _ receiptCompletion: @escaping (Result<Void, Never>) -> Void
+    )
+    
+    func enableLogging()
 }

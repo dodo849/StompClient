@@ -8,7 +8,7 @@
 import Foundation
 
 open class StompProvider<Entry: EntryType>: StompProviderProtocol {
-    private var client: StompClient?
+    private var client: StompClientProtocol?
     private let decodeHelper = DecodeHelper()
     /// Store interceptors to pass them during client initialization
     private var interceptor: Interceptor? = nil
@@ -52,10 +52,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         
         switch entry.command {
         case .connect:
-            client.connect(
-                headers: mergedHeaders,
-                body: entry.body.toStompBody()
-            ) { [weak self] result in
+            client.connect(headers: mergedHeaders) { [weak self] result in
                 switch result {
                 case .success():
                     if let response = "Connect success" as? Response {
@@ -164,7 +161,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
     }
     
     public func disconnect() {
-        client?.disconnect()
+//        client?.disconnect() // TODO request에서 처리
         client = nil
     }
 }
@@ -173,7 +170,7 @@ public extension StompProvider {
     private func createNewClient() -> StompClient {
         let newClient = StompClient(url: Entry.baseURL)
         if let interceptor = interceptor {
-            newClient.setInterceptor(interceptor)
+            newClient.setRetirier(interceptor)
         }
         return newClient
     }
@@ -188,7 +185,11 @@ public extension StompProvider {
         self.interceptor = intercepter
         
         if let client = client {
-            let _ = client.setInterceptor(intercepter)
+            let interceptorDecorator = StompClientExecutorDecorator(
+                interceptor: intercepter,
+                wrappee: client
+            )
+            self.client = interceptorDecorator
         }
         return self
     }

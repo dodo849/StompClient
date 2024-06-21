@@ -12,6 +12,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     public typealias ReceiveCompletionType = (Result<StompReceiveMessage, any Error>) -> Void
     public typealias ReceiptCompletionType = (Result<StompReceiveMessage, any Error>) -> Void
     public typealias ConnectCompletionType = (Result<Void, Never>) -> Void
+    public typealias DisconnectCompletionType = (Result<Void, Never>) -> Void
     
     /// A Completion for Stomp 'MESSAGE' command
     fileprivate struct ReceiveCompletion {
@@ -52,7 +53,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     private var isSocketConnect: Bool = false
 
     // MARK: Inerceptor
-    private var interceptor: Interceptor? = nil
+    private var retrier: Retrier? = nil
     
     public init(url: URL) {
         self.url = url
@@ -65,15 +66,17 @@ public final class StompClient: NSObject, StompClientProtocol {
         message: StompRequestMessage,
         _ completion: @escaping ReceiptCompletionType
     ) {
-        let send: (StompRequestMessage) -> Void = { [weak self] message in
-            self?.performSendAnyMessage(message: message, completion)
-        }
-
-        if let interceptor = interceptor {
-            interceptor.execute(message: message, completion: send)
-        } else {
-            send(message)
-        }
+//        let send: (StompRequestMessage) -> Void = { [weak self] message in
+//            self?.performSendAnyMessage(message: message, completion)
+//        }
+//
+//        if let interceptor = interceptor {
+//            interceptor.execute(message: message, completion: send)
+//        } else {
+//            send(message)
+//        }
+        
+        self.performSendAnyMessage(message: message, completion)
     }
     
     private func performSendAnyMessage(
@@ -95,8 +98,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     
     public func connect(
         headers: [String: String],
-        body: StompBody?,
-        _ completion: @escaping ConnectCompletionType
+        _ connectCompletion: @escaping ConnectCompletionType
     ) {
         guard let host = url.host
         else {
@@ -107,23 +109,24 @@ public final class StompClient: NSObject, StompClientProtocol {
             return
         }
         
-        self.connectCompletion = completion
+        self.connectCompletion = connectCompletion
         
         let connectMessage = StompRequestMessage(
             command: .connect,
-            headers: headers,
-            body: body
+            headers: headers
         )
         
-        let connect: (StompRequestMessage) -> Void = { [weak self] message in
-            self?.performConnect(message: message)
-        }
-
-        if let interceptor = interceptor {
-            interceptor.execute(message: connectMessage, completion: connect)
-        } else {
-            connect(connectMessage)
-        }
+//        let connect: (StompRequestMessage) -> Void = { [weak self] message in
+//            self?.performConnect(message: message)
+//        }
+//
+//        if let interceptor = interceptor {
+//            interceptor.execute(message: connectMessage, completion: connect)
+//        } else {
+//            connect(connectMessage)
+//        }
+        
+        self.performConnect(message: connectMessage)
     }
     
     private func performConnect(
@@ -176,14 +179,14 @@ public final class StompClient: NSObject, StompClientProtocol {
     public func send(
         headers: [String: String],
         body: StompBody?,
-        _ completion: @escaping ReceiveCompletionType
+        _ receiptCompletion: @escaping ReceiptCompletionType
     ) {
         guard let _ = headers["destination"]
         else { logger.error("Missing 'destination' header"); return }
         
         if let receiptID = headers["receipt"] {
             let receiptCompletion = ReceiptCompletion(
-                completion: completion,
+                completion: receiptCompletion,
                 receiptID: receiptID
             )
             receiptCompletions[receiptID] = receiptCompletion
@@ -195,15 +198,17 @@ public final class StompClient: NSObject, StompClientProtocol {
             body: body
         )
         
-        let send: (StompRequestMessage) -> Void = { [weak self] message in
-            self?.performSend(message: sendMessage)
-        }
-
-        if let interceptor = interceptor {
-            interceptor.execute(message: sendMessage, completion: send)
-        } else {
-            send(sendMessage)
-        }
+//        let send: (StompRequestMessage) -> Void = { [weak self] message in
+//            self?.performSend(message: sendMessage)
+//        }
+//
+//        if let interceptor = interceptor {
+//            interceptor.execute(message: sendMessage, completion: send)
+//        } else {
+//            send(sendMessage)
+//        }
+        
+        self.performSend(message: sendMessage)
     }
     
     
@@ -235,20 +240,27 @@ public final class StompClient: NSObject, StompClientProtocol {
             headers: headers
         )
         
-        let subscribe: (StompRequestMessage) -> Void = { [weak self] message in
-            self?.performSubscribe(
+//        let subscribe: (StompRequestMessage) -> Void = { [weak self] message in
+//            self?.performSubscribe(
+//                id: subscriptionID,
+//                topic: topic,
+//                message: subscribeMessage,
+//                receiveCompletion
+//            )
+//        }
+//
+//        if let interceptor = interceptor {
+//            interceptor.execute(message: subscribeMessage, completion: subscribe)
+//        } else {
+//            subscribe(subscribeMessage)
+//        }
+        
+            self.performSubscribe(
                 id: subscriptionID,
                 topic: topic,
                 message: subscribeMessage,
                 receiveCompletion
             )
-        }
-
-        if let interceptor = interceptor {
-            interceptor.execute(message: subscribeMessage, completion: subscribe)
-        } else {
-            subscribe(subscribeMessage)
-        }
     }
     
     private func performSubscribe(
@@ -273,51 +285,64 @@ public final class StompClient: NSObject, StompClientProtocol {
     
 
     public func unsubscribe(
-        headers: [String: String],
-        _ completion: @escaping ((any Error)?) -> Void
+        headers: [String: String]
     ) {
-        guard let _ = headers["id"] else {
-            completion(StompError.invalidHeader("Missing 'id' header"))
-            return
-        }
+        guard let _ = headers["destination"]
+        else { logger.error("Missing 'id' header"); return }
         
-        guard let topic = headers["destination"] else {
-            completion(StompError.invalidHeader("Missing 'destination' header"))
-            return
-        }
+        guard let topic = headers["destination"] 
+        else { logger.error("Missing 'destination' header"); return }
         
         let unsubscribeMessage = StompRequestMessage(
             command: .unsubscribe,
             headers: headers
         )
+//        
+//        let unsubscribe: (StompRequestMessage) -> Void = { [weak self] message in
+//            self?.performUnsubscribe(message: unsubscribeMessage, topic: topic)
+//        }
+//
+//        if let interceptor = interceptor {
+//            interceptor.execute(message: unsubscribeMessage, completion: unsubscribe)
+//        } else {
+//            unsubscribe(unsubscribeMessage)
+//        }
         
-        let unsubscribe: (StompRequestMessage) -> Void = { [weak self] message in
-            self?.performUnsubscribe(message: unsubscribeMessage, topic: topic, completion: completion)
-        }
-
-        if let interceptor = interceptor {
-            interceptor.execute(message: unsubscribeMessage, completion: unsubscribe)
-        } else {
-            unsubscribe(unsubscribeMessage)
-        }
-        
-        performUnsubscribe(message: unsubscribeMessage, topic: topic, completion: completion)
+        performUnsubscribe(message: unsubscribeMessage, topic: topic)
     }
 
     private func performUnsubscribe(
         message: StompRequestMessage,
-        topic: String,
-        completion: @escaping ((any Error)?) -> Void
+        topic: String
     ) {
         websocketClient.sendMessage(message.toFrame())
         receiveCompletions.removeValue(forKey: topic)
         idByTopic.removeValue(forKey: topic)
     }
     
-    // todo proxy recipt, interceptor
-    public func disconnect() {
-        websocketClient.disconnect()
-        receiveCompletions.removeAll()
+    public func disconnect(
+        headers: [String: String],
+        _ receiptCompletion: @escaping DisconnectCompletionType
+    ) {
+        if let receiptID = headers["receipt"] {
+            let receiptCompletion = ReceiptCompletion(
+                completion: { [weak self] _ in
+                    receiptCompletion(.success(()))
+                    
+                    self?.websocketClient.disconnect()
+                    self?.receiveCompletions.removeAll()
+                },
+                receiptID: receiptID
+            )
+            receiptCompletions[receiptID] = receiptCompletion
+        }
+        
+        let disconnectMessage = StompRequestMessage(
+            command: .disconnect,
+            headers: headers
+        )
+        
+        websocketClient.sendMessage(disconnectMessage.toFrame())
     }
 }
 
@@ -387,12 +412,12 @@ private extension StompClient {
             return
         }
 
-        guard let interceptor = interceptor else {
+        guard let retrier = retrier else {
             completion(.failure(error))
             return
         }
 
-        interceptor.retry(
+        retrier.retry(
             message: message,
             error: error
         ) { [weak self] retryMessage, retryType in
@@ -433,7 +458,7 @@ public extension StompClient {
         self.websocketClient.enableLogging()
     }
     
-    func setInterceptor(_ intercepter: Interceptor) {
-        self.interceptor = intercepter
+    func setRetirier(_ retrier: Retrier) {
+        self.retrier = retrier
     }
 }
