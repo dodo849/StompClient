@@ -65,12 +65,14 @@ public final class StompClient: NSObject, StompClientProtocol {
         message: StompRequestMessage,
         _ completion: @escaping ReceiptCompletionType
     ) {
+        let send: (StompRequestMessage) -> Void = { [weak self] message in
+            self?.performSendAnyMessage(message: message, completion)
+        }
+
         if let interceptor = interceptor {
-            interceptor.execute(message: message) { [weak self] interceptedMessage in
-                self?.performSendAnyMessage(message: interceptedMessage, completion)
-            }
+            interceptor.execute(message: message, completion: send)
         } else {
-            performSendAnyMessage(message: message, completion)
+            send(message)
         }
     }
     
@@ -113,15 +115,15 @@ public final class StompClient: NSObject, StompClientProtocol {
             body: body
         )
         
-        if let interceptor = interceptor {
-            interceptor.execute(message: connectMessage) { [weak self] interceptedMessage in
-                self?.performConnect(message: interceptedMessage)
-            }
-        } else {
-            performConnect(message: connectMessage)
+        let connect: (StompRequestMessage) -> Void = { [weak self] message in
+            self?.performConnect(message: message)
         }
-        
-        
+
+        if let interceptor = interceptor {
+            interceptor.execute(message: connectMessage, completion: connect)
+        } else {
+            connect(connectMessage)
+        }
     }
     
     private func performConnect(
@@ -137,14 +139,14 @@ public final class StompClient: NSObject, StompClientProtocol {
                 switch message {
                 case .string(let text):
                     do {
-                        try self.performCompletions(text)
+                        try self.executeCompletions(text)
                     } catch {
                         logger.error("Failed to decode string to StompReceiveMessage\n \(error)")
                     }
                 case .data(let data):
                     if let decodedText = String(data: data, encoding: .utf8) {
                         do {
-                            try self.performCompletions(decodedText)
+                            try self.executeCompletions(decodedText)
                         } catch {
                             logger.error("Failed to decode string to StompReceiveMessage\n \(error)")
                         }
@@ -160,7 +162,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         websocketClient.sendMessage(message.toFrame())
     }
     
-    func performCompletions(_ frameString: String) throws {
+    func executeCompletions(_ frameString: String) throws {
         do {
             let receiveMessage = try StompReceiveMessage
                 .convertFromFrame(frameString)
@@ -193,7 +195,15 @@ public final class StompClient: NSObject, StompClientProtocol {
             body: body
         )
         
-        performSend(message: sendMessage)
+        let send: (StompRequestMessage) -> Void = { [weak self] message in
+            self?.performSend(message: sendMessage)
+        }
+
+        if let interceptor = interceptor {
+            interceptor.execute(message: sendMessage, completion: send)
+        } else {
+            send(sendMessage)
+        }
     }
     
     
@@ -225,12 +235,20 @@ public final class StompClient: NSObject, StompClientProtocol {
             headers: headers
         )
         
-        performSubscribe(
-            id: subscriptionID,
-            topic: topic,
-            message: subscribeMessage,
-            receiveCompletion
-        )
+        let subscribe: (StompRequestMessage) -> Void = { [weak self] message in
+            self?.performSubscribe(
+                id: subscriptionID,
+                topic: topic,
+                message: subscribeMessage,
+                receiveCompletion
+            )
+        }
+
+        if let interceptor = interceptor {
+            interceptor.execute(message: subscribeMessage, completion: subscribe)
+        } else {
+            subscribe(subscribeMessage)
+        }
     }
     
     private func performSubscribe(
@@ -252,6 +270,7 @@ public final class StompClient: NSObject, StompClientProtocol {
             receiveCompletions[topic] = [newCompletion]
         }
     }
+    
 
     public func unsubscribe(
         headers: [String: String],
@@ -271,6 +290,17 @@ public final class StompClient: NSObject, StompClientProtocol {
             command: .unsubscribe,
             headers: headers
         )
+        
+        let unsubscribe: (StompRequestMessage) -> Void = { [weak self] message in
+            self?.performUnsubscribe(message: unsubscribeMessage, topic: topic, completion: completion)
+        }
+
+        if let interceptor = interceptor {
+            interceptor.execute(message: unsubscribeMessage, completion: unsubscribe)
+        } else {
+            unsubscribe(unsubscribeMessage)
+        }
+        
         performUnsubscribe(message: unsubscribeMessage, topic: topic, completion: completion)
     }
 
@@ -284,6 +314,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         idByTopic.removeValue(forKey: topic)
     }
     
+    // todo proxy recipt, interceptor
     public func disconnect() {
         websocketClient.disconnect()
         receiveCompletions.removeAll()
