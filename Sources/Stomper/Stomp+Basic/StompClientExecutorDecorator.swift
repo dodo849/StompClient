@@ -119,4 +119,8 @@ final class StompClientExecutorDecorator: StompClientProtocol {
     func enableLogging() {
         wrappee.enableLogging()
     }
+    
+    func setRetirier(_ retrier: Retrier) {
+        self.wrappee.setRetirier(retrier)
+    }
 }

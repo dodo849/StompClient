@@ -83,4 +83,6 @@ public protocol StompClientProtocol {
     )
     
     func enableLogging()
+    
+    func setRetirier(_ retrier: Retrier)
 }

@@ -186,6 +186,7 @@ public extension StompProvider {
                 wrappee: client
             )
             self.client = executorDecorator
+            self.client?.setRetirier(intercepter)
         }
         return self
     }
