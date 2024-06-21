@@ -66,16 +66,6 @@ public final class StompClient: NSObject, StompClientProtocol {
         message: StompRequestMessage,
         _ completion: @escaping ReceiptCompletionType
     ) {
-//        let send: (StompRequestMessage) -> Void = { [weak self] message in
-//            self?.performSendAnyMessage(message: message, completion)
-//        }
-//
-//        if let interceptor = interceptor {
-//            interceptor.execute(message: message, completion: send)
-//        } else {
-//            send(message)
-//        }
-        
         self.performSendAnyMessage(message: message, completion)
     }
     
@@ -115,16 +105,6 @@ public final class StompClient: NSObject, StompClientProtocol {
             command: .connect,
             headers: headers
         )
-        
-//        let connect: (StompRequestMessage) -> Void = { [weak self] message in
-//            self?.performConnect(message: message)
-//        }
-//
-//        if let interceptor = interceptor {
-//            interceptor.execute(message: connectMessage, completion: connect)
-//        } else {
-//            connect(connectMessage)
-//        }
         
         self.performConnect(message: connectMessage)
     }
@@ -169,6 +149,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         do {
             let receiveMessage = try StompReceiveMessage
                 .convertFromFrame(frameString)
+            
             self.executeReceiveCompletions(receiveMessage)
             self.executeReceiptCompletions(receiveMessage)
         } catch {
@@ -197,16 +178,6 @@ public final class StompClient: NSObject, StompClientProtocol {
             headers: headers,
             body: body
         )
-        
-//        let send: (StompRequestMessage) -> Void = { [weak self] message in
-//            self?.performSend(message: sendMessage)
-//        }
-//
-//        if let interceptor = interceptor {
-//            interceptor.execute(message: sendMessage, completion: send)
-//        } else {
-//            send(sendMessage)
-//        }
         
         self.performSend(message: sendMessage)
     }
@@ -239,21 +210,6 @@ public final class StompClient: NSObject, StompClientProtocol {
             command: .subscribe,
             headers: headers
         )
-        
-//        let subscribe: (StompRequestMessage) -> Void = { [weak self] message in
-//            self?.performSubscribe(
-//                id: subscriptionID,
-//                topic: topic,
-//                message: subscribeMessage,
-//                receiveCompletion
-//            )
-//        }
-//
-//        if let interceptor = interceptor {
-//            interceptor.execute(message: subscribeMessage, completion: subscribe)
-//        } else {
-//            subscribe(subscribeMessage)
-//        }
         
             self.performSubscribe(
                 id: subscriptionID,
@@ -297,16 +253,6 @@ public final class StompClient: NSObject, StompClientProtocol {
             command: .unsubscribe,
             headers: headers
         )
-//        
-//        let unsubscribe: (StompRequestMessage) -> Void = { [weak self] message in
-//            self?.performUnsubscribe(message: unsubscribeMessage, topic: topic)
-//        }
-//
-//        if let interceptor = interceptor {
-//            interceptor.execute(message: unsubscribeMessage, completion: unsubscribe)
-//        } else {
-//            unsubscribe(unsubscribeMessage)
-//        }
         
         performUnsubscribe(message: unsubscribeMessage, topic: topic)
     }

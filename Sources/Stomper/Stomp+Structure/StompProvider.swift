@@ -18,21 +18,6 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         self.client = StompClient(url: Entry.baseURL)
     }
     
-    private func mergeAndGenerateHeaders(entry: Entry) -> [String: String] {
-        let explicitHeaders = entry.additionalHeaders
-            .merging(entry.destinationHeader) {
-                (current, _) in current
-            }
-        
-        var mergedHeaders = entry.command.headers(explicitHeaders)
-        
-        if enableReceiptAutoGeneration {
-            mergedHeaders["receipt"] = mergedHeaders["receipt"] ?? UUID().uuidString
-        }
-        
-        return mergedHeaders
-    }
-    
     // Send the request to the actual client
     public func request<Response>(
         of: Response.Type,
@@ -165,16 +150,9 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
         client = nil
     }
 }
-
-public extension StompProvider {
-    private func createNewClient() -> StompClient {
-        let newClient = StompClient(url: Entry.baseURL)
-        if let interceptor = interceptor {
-            newClient.setRetirier(interceptor)
-        }
-        return newClient
-    }
     
+public extension StompProvider {
+
     func enableLogging() -> Self {
         self.client?.enableLogging()
         return self
@@ -185,11 +163,11 @@ public extension StompProvider {
         self.interceptor = intercepter
         
         if let client = client {
-            let interceptorDecorator = StompClientExecutorDecorator(
-                interceptor: intercepter,
+            let executorDecorator = StompClientExecutorDecorator(
+                executor: intercepter,
                 wrappee: client
             )
-            self.client = interceptorDecorator
+            self.client = executorDecorator
         }
         return self
     }
@@ -197,6 +175,32 @@ public extension StompProvider {
     func disableReceiptAutoGeneration(_ disabled: Bool = false) -> Self {
         self.enableReceiptAutoGeneration = disabled
         return self
+    }
+}
+
+extension StompProvider {
+    private func createNewClient() -> StompClient {
+        let newClient = StompClient(url: Entry.baseURL)
+        if let interceptor = interceptor {
+            newClient.setRetirier(interceptor)
+        }
+        return newClient
+    }
+    
+    
+    private func mergeAndGenerateHeaders(entry: Entry) -> [String: String] {
+        let explicitHeaders = entry.additionalHeaders
+            .merging(entry.destinationHeader) {
+                (current, _) in current
+            }
+        
+        var mergedHeaders = entry.command.headers(explicitHeaders)
+        
+        if enableReceiptAutoGeneration {
+            mergedHeaders["receipt"] = mergedHeaders["receipt"] ?? UUID().uuidString
+        }
+        
+        return mergedHeaders
     }
 }
 
