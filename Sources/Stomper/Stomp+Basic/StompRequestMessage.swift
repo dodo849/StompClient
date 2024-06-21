@@ -43,8 +43,25 @@ extension StompRequestMessage {
         
         var updatedHeaders = headers.dict
         
+        var bodyString: String?
         if let body = body {
             updatedHeaders["content-type"] = body.contentType
+            
+            switch body {
+            case .data(let data):
+                bodyString = String(data: data, encoding: .utf8)
+            case .string(let string):
+                bodyString = string
+            case .json(let json, let encoder):
+                let jsonEncoder = encoder ?? JSONEncoder()
+                if let jsonData = try? jsonEncoder.encode(json) {
+                    bodyString = String(data: jsonData, encoding: .utf8)
+                }
+            }
+            
+            if let bodyString = bodyString {
+                updatedHeaders["content-length"] = "\(bodyString.utf8.count)"
+            }
         }
         
         for (key, value) in updatedHeaders {
@@ -53,18 +70,8 @@ extension StompRequestMessage {
         
         frame += "\n"
         
-        if let body = body {
-            switch body {
-            case .data(let data):
-                frame += String(data: data, encoding: .utf8) ?? ""
-            case .string(let string):
-                frame += string
-            case .json(let json, let encoder):
-                let jsonEncoder = encoder ?? JSONEncoder()
-                if let jsonData = try? jsonEncoder.encode(json) {
-                    frame += String(data: jsonData, encoding: .utf8) ?? ""
-                }
-            }
+        if let bodyString = bodyString {
+            frame += bodyString
         }
         
         frame += "\u{00}"

@@ -177,16 +177,16 @@ public extension StompProvider {
     }
 
     
-    func intercepted(_ intercepter: Interceptor) -> Self {
-        self.interceptor = intercepter
+    func intercepted(_ interceptor: Interceptor) -> Self {
+        self.interceptor = interceptor
         
         if let client = client {
             let executorDecorator = StompClientExecutorDecorator(
-                executor: intercepter,
+                executor: interceptor,
                 wrappee: client
             )
             self.client = executorDecorator
-            self.client?.setRetirier(intercepter)
+            self.client?.setRetrier(interceptor)
         }
         return self
     }
@@ -198,10 +198,16 @@ public extension StompProvider {
 }
 
 extension StompProvider {
-    private func createNewClient() -> StompClient {
+    private func createNewClient() -> StompClientProtocol {
         let newClient = StompClient(url: Entry.baseURL)
+        
         if let interceptor = interceptor {
-            newClient.setRetirier(interceptor)
+            newClient.setRetrier(interceptor)
+            let executorDecorator = StompClientExecutorDecorator(
+                executor: interceptor,
+                wrappee: newClient
+            )
+            return executorDecorator
         }
         return newClient
     }

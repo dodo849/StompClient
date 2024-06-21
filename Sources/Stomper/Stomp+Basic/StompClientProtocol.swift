@@ -8,7 +8,7 @@
 import Foundation
 
 /// Client converting WebSocket requests to STOMP behavior
-public protocol StompClientProtocol {
+public protocol StompClientProtocol: AnyObject {
     /**
      Sends a generic STOMP message.
      
@@ -25,8 +25,8 @@ public protocol StompClientProtocol {
      Connects to the STOMP server and sends a CONNECT frame.
      
      - Parameters:
-        - acceptVersion: The STOMP protocol version the client supports. Default is "1.2".
-        - completion: A completion handler called when the connection is established or if an error occurs.
+        - headers: The headers to include in the CONNECT frame.
+        - connectCompletion: A completion handler called when the connection is established or if an error occurs.
      */
     func connect(
         headers: [String: String],
@@ -37,10 +37,9 @@ public protocol StompClientProtocol {
      Sends a message to a specific topic.
      
      - Parameters:
-        - topic: The topic to which the message is sent.
+        - headers: The headers to include in the message frame.
         - body: The body of the message to be sent.
-        - receiptID: An identifier for the receipt. The server will acknowledge the processing of this frame with a RECEIPT frame.
-        - completion: A completion handler called when the receipt for the message is received or if an error occurs.
+        - receiptCompletion: A completion handler called when the receipt for the message is received or if an error occurs.
      */
     func send(
         headers: [String: String],
@@ -52,21 +51,19 @@ public protocol StompClientProtocol {
      Subscribes to a specific topic.
      
      - Parameters:
-        - topic: The topic to subscribe to.
-        - id: An optional subscription ID. Default is new UUID.
+        - headers: The headers to include in the SUBSCRIBE frame.
         - receiveCompletion: A completion handler called when a message is received or if an error occurs.
      */
     func subscribe(
         headers: [String: String],
-        _ receiveCompletion: @escaping (Result<StompReceiveMessage, Never>) -> Void
+        _ receiveCompletion: @escaping (Result<StompReceiveMessage, Error>) -> Void
     )
     
     /**
      Unsubscribes from a specific topic.
      
      - Parameters:
-        - topic: The topic to unsubscribe from.
-        - completion: A completion handler called when the unsubscription is successful or if an error occurs.
+        - headers: The headers to include in the UNSUBSCRIBE frame.
      */
     func unsubscribe(
         headers: [String: String]
@@ -75,14 +72,25 @@ public protocol StompClientProtocol {
     /**
      Disconnects from the STOMP server.
      
-     올바르게 종료되면 클로저가 실행되고 websocket connect가 종료됨.
+     - Parameters:
+        - headers: The headers to include in the DISCONNECT frame.
+        - receiptCompletion: A completion handler called when the disconnection is successful or if an error occurs.
      */
     func disconnect(
         headers: [String: String],
         _ receiptCompletion: @escaping (Result<Void, Error>) -> Void
     )
     
+    /**
+     Enables logging for the STOMP client. Default is disabled.
+     */
     func enableLogging()
     
-    func setRetirier(_ retrier: Retrier)
+    /**
+     Sets the retrier for the STOMP client.
+     
+     - Parameters:
+        - retrier: The retrier to handle retry logic.
+     */
+    func setRetrier(_ retrier: Retrier)
 }

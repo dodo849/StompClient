@@ -52,9 +52,6 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         }
         
         let socketMessage = URLSessionWebSocketTask.Message.string(message)
-        self.logger.debug("""
-            WebSocket try send the message:\n\(message)\n
-            """)
         webSocketTask?.send(socketMessage) { [weak self] error in
             if let error = error {
                 self?.logger.error("""

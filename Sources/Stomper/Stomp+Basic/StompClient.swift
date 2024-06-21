@@ -9,7 +9,7 @@ import Foundation
 import OSLog
 
 public final class StompClient: NSObject, StompClientProtocol {
-    public typealias ReceiveCompletionType = (Result<StompReceiveMessage, Never>) -> Void
+    public typealias ReceiveCompletionType = (Result<StompReceiveMessage, Error>) -> Void
     public typealias ReceiptCompletionType = (Result<StompReceiveMessage, any Error>) -> Void
     public typealias ConnectCompletionType = (Result<Void, Error>) -> Void
     public typealias DisconnectCompletionType = (Result<Void, Error>) -> Void
@@ -17,7 +17,9 @@ public final class StompClient: NSObject, StompClientProtocol {
     /// A Completion for Stomp 'MESSAGE' command
     fileprivate struct ReceiveCompletion {
         var completion: ReceiveCompletionType
+        var subsribeMessage: StompRequestMessage
         var subscriptionID: String
+        var receiptID: String?
     }
     
     /// A Completion for Stomp 'RECEIPT' command
@@ -175,13 +177,16 @@ public final class StompClient: NSObject, StompClientProtocol {
         websocketClient.sendMessage(message.toFrame())
     }
     
-    func executeCompletions(
+    private func executeCompletions(
         _ frameString: String,
         didRetryCount: Int = 0
     ) throws {
         do {
             let receiveMessage = try StompReceiveMessage
                 .convertFromFrame(frameString)
+            
+            /// 그냥 여기서 핸들 에러 하고싶다......
+            ///
             
             self.executeConnectCompletion(
                 message: receiveMessage,
@@ -249,32 +254,21 @@ public final class StompClient: NSObject, StompClientProtocol {
                 return UUID().uuidString
             }
         }()
+        
         headers["id"] = subscriptionID
+        
+        let receiptID = headers["receipt"]
         
         let subscribeMessage = StompRequestMessage(
             command: .subscribe,
             headers: headers
         )
         
-        self.performSubscribe(
-            id: subscriptionID,
-            topic: topic,
-            message: subscribeMessage,
-            receiveCompletion
-        )
-    }
-    
-    private func performSubscribe(
-        id: String,
-        topic: String,
-        message: StompRequestMessage,
-        _ receiveCompletion: @escaping ReceiveCompletionType
-    ) {
-        websocketClient.sendMessage(message.toFrame())
-        
         let newCompletion = ReceiveCompletion(
             completion: receiveCompletion,
-            subscriptionID: id
+            subsribeMessage: subscribeMessage,
+            subscriptionID: subscriptionID, 
+            receiptID: receiptID
         )
         
         if let _ = receiveCompletions[topic] {
@@ -282,6 +276,18 @@ public final class StompClient: NSObject, StompClientProtocol {
         } else {
             receiveCompletions[topic] = [newCompletion]
         }
+        
+        self.performSubscribe(
+            message: subscribeMessage,
+            receiveCompletion
+        )
+    }
+    
+    private func performSubscribe(
+        message: StompRequestMessage,
+        _ receiveCompletion: @escaping ReceiveCompletionType
+    ) {
+        websocketClient.sendMessage(message.toFrame())
     }
     
     
@@ -364,7 +370,7 @@ private extension StompClient {
             return
         }
         
-        // error인데 socket커넥트가 완료가 안된 상태이면 CONNET 재시도.
+        //If an error message is received and the socket is not connected, perform a retry.
         if message.command == .error && !isSocketConnect {
             handleConnectRetry(
                 message: connectCompletion.requestMessage,
@@ -377,9 +383,10 @@ private extension StompClient {
     }
     
     private func executeReceiveCompletions(
-        message: StompReceiveMessage
+        message: StompReceiveMessage,
+        didRetryCount: Int = 0
     ) {
-        if message.command != .message {
+        if message.command != .message || message.command != .error {
             return
         }
         
@@ -390,7 +397,24 @@ private extension StompClient {
                 }
             executeReceiveCompletions.forEach { _, receiveCompletions in
                 receiveCompletions.forEach {
-                    $0.completion(.success(message))
+                    
+                    // If error frame is for subscription, retry subscribe
+                    if let receiptID = $0.receiptID,
+                        message.command == .error,
+                        message.headers["receipt-id"] == receiptID {
+                        
+                        handleSendAnyMessageRetry(
+                            message: $0.subsribeMessage,
+                            errorMessage: message,
+                            didRetryCount: didRetryCount,
+                            completion: $0.completion
+                        )
+                    // If successfully received message, return all subscribe completions
+                    } else if message.command == .message{
+                        receiveCompletions.forEach {
+                            $0.completion(.success(message))
+                        }
+                    }
                 }
             }
         }
@@ -409,7 +433,9 @@ private extension StompClient {
                 if message.command == .receipt {
                     receiptCompletion.completion(.success(message))
                     
-                } else if message.command == .error {
+                } else if message.command == .error,
+                    message.headers["receipt-id"] == receiptID {
+                    
                         handleSendAnyMessageRetry(
                             message: receiptCompletion.requestMessage,
                             errorMessage: message,
@@ -453,10 +479,21 @@ private extension StompClient {
                 }
                 
                 DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
+                    // Reconnect
                     self.performConnect(
                         message: retryMessage,
                         didRetryCount: didRetryCount + 1
                     )
+                    
+                    // Recover subscription
+                    self.receiveCompletions.forEach { key, value in
+                        value.forEach { receiveCompletion in
+                            self.performSubscribe(
+                                message: receiveCompletion.subsribeMessage,
+                                receiveCompletion.completion
+                            )
+                        }
+                    }
                 }
                 
             case .doNotRetry:
@@ -498,12 +535,33 @@ private extension StompClient {
                     return
                 }
                 
-                DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
-                    self.performSendAnyMessage(
-                        message: retryMessage,
-                        didRetryCount: didRetryCount + 1,
-                        completion
-                    )
+                DispatchQueue.global().asyncAfter(deadline: .now() + delay) { [weak self] in
+                    guard let self = self else {
+                        completion(.failure(receiveError))
+                        return
+                    }
+                    
+                    if let connectMessage = self.connectCompletion?.requestMessage {
+                        // Reconnect
+                        performConnect(message: connectMessage)
+                        
+                        // Recover subscription
+                        self.receiveCompletions.forEach { key, value in
+                            value.forEach { receiveCompletion in
+                                self.performSubscribe(
+                                    message: receiveCompletion.subsribeMessage,
+                                    receiveCompletion.completion
+                                )
+                            }
+                        }
+                        
+                        // Send Message
+                        self.performSendAnyMessage(
+                            message: retryMessage,
+                            didRetryCount: didRetryCount + 1,
+                            completion
+                        )
+                    }
                 }
                 
             case .doNotRetry:
@@ -522,7 +580,7 @@ public extension StompClient {
         self.websocketClient.enableLogging()
     }
     
-    func setRetirier(_ retrier: Retrier) {
+    func setRetrier(_ retrier: Retrier) {
         self.retrier = retrier
     }
 }

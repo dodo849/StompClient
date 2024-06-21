@@ -31,6 +31,7 @@ public protocol StompProviderProtocol {
      - If the command is `subscribe`, completion indicates receiving a `MESSAGE` frame from the server or an error.
      - If the command is `send`, completion indicates receiving a `RECEIPT` frame from the server or an error.
      - For other commands, completion indicates callbacks for the `RECEIPT` frame if there is a receipt-id header.
+    
      */
     func request<Response>(
         of: Response.Type,
@@ -53,7 +54,7 @@ public protocol StompProviderProtocol {
             .intercepted(StompLoggerInterceptor())
         ```
      */
-    func intercepted(_ intercepter: Interceptor) -> Self
+    func intercepted(_ interceptor: Interceptor) -> Self
     
     
     /**

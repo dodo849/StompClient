@@ -69,7 +69,7 @@ final class StompClientExecutorDecorator: StompClientProtocol {
     
     func subscribe(
         headers: [String : String],
-        _ receiveCompletion: @escaping (Result<StompReceiveMessage, Never>) -> Void
+        _ receiveCompletion: @escaping (Result<StompReceiveMessage, Error>) -> Void
     ) {
         let subscribeMessage = StompRequestMessage(
             command: .subscribe,
@@ -120,7 +120,7 @@ final class StompClientExecutorDecorator: StompClientProtocol {
         wrappee.enableLogging()
     }
     
-    func setRetirier(_ retrier: Retrier) {
-        self.wrappee.setRetirier(retrier)
+    func setRetrier(_ retrier: Retrier) {
+        self.wrappee.setRetrier(retrier)
     }
 }
