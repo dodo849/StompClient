@@ -51,6 +51,8 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                             completion
                         )
                     }
+                case .failure(let error):
+                    completion(.failure(error))
                 }
             }
             
@@ -126,6 +128,8 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                             completion
                         )
                     }
+                case .failure(let error):
+                    completion(.failure(error))
                 }
             }
             
