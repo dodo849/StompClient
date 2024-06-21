@@ -25,7 +25,7 @@ public struct TokenInterceptor: Interceptor {
     
     public func retry(
         message: StompRequestMessage,
-        error: any Error,
+        errorMessage: StompReceiveMessage,
         completion: @escaping (StompRequestMessage, InterceptorRetryType) -> Void
     ) {
         completion(message, .doNotRetry)

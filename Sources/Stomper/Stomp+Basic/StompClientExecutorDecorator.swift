@@ -32,7 +32,7 @@ final class StompClientExecutorDecorator: StompClientProtocol {
         
     func connect(
         headers: [String : String],
-        _ completion: @escaping (Result<Void, Never>) -> Void
+        _ completion: @escaping (Result<Void, Error>) -> Void
     ) {
         let connectMessage = StompRequestMessage(
             command: .connect,
@@ -40,7 +40,10 @@ final class StompClientExecutorDecorator: StompClientProtocol {
         )
         
         executor.execute(message: connectMessage) { [weak self] interceptedMessage in
-            self?.wrappee.connect(headers: interceptedMessage.headers.dict, completion)
+            self?.wrappee.connect(
+                headers: interceptedMessage.headers.dict,
+                completion
+            )
         }
     }
     
@@ -66,7 +69,7 @@ final class StompClientExecutorDecorator: StompClientProtocol {
     
     func subscribe(
         headers: [String : String],
-        _ receiveCompletion: @escaping (Result<StompReceiveMessage, any Error>) -> Void
+        _ receiveCompletion: @escaping (Result<StompReceiveMessage, Never>) -> Void
     ) {
         let subscribeMessage = StompRequestMessage(
             command: .subscribe,
@@ -98,7 +101,7 @@ final class StompClientExecutorDecorator: StompClientProtocol {
     
     func disconnect(
         headers: [String: String],
-        _ receiptCompletion: @escaping (Result<Void, Never>) -> Void
+        _ receiptCompletion: @escaping (Result<Void, Error>) -> Void
     ) {
         let disconnectMessage = StompRequestMessage(
             command: .disconnect,
