@@ -11,11 +11,10 @@ import OSLog
 class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private typealias ConnectCompletion = ((any Error)?) -> Void
     
-    private let logger = Logger(
+    private let logger = DisableableLogger(
         subsystem: Bundle.main.bundleIdentifier!,
         category: "WebSocket"
     )
-    private var isLogOn: Bool = false
     
     private var webSocketTask: URLSessionWebSocketTask?
     private var urlSession: URLSession?
@@ -49,9 +48,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
             if let error = error {
                 self?.logger.error("WebSocket failed to send the message:\n\(message)")
             } else {
-                self?.log {
-                    self?.logger.info("WebSocket successfully sent the message:\n\(message)")
-                }
+                self?.logger.info("WebSocket successfully sent the message:\n\(message)")
             }
         }
     }
@@ -62,14 +59,10 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         webSocketTask?.receive { [weak self] result in
             switch result {
             case .failure(let error):
-                self?.log {
-                    self?.logger.critical("WebSocket receive error message:\n\(error)")
-                }
+                self?.logger.fault("WebSocket receive error message:\n\(error)")
                 completion(.failure(error))
             case .success(let message):
-                self?.log {
-                    self?.printReceivedMessage(message)
-                }
+                self?.printReceivedMessage(message)
                 completion(.success(message))
                 self?.receiveMessage(completion)
             }
@@ -88,7 +81,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
             fatalError()
         }
     }
-
+    
     func disconnect() {
         webSocketTask?.cancel(with: .goingAway, reason: nil)
     }
@@ -96,32 +89,24 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     // MARK: URLSessionWebSocketDelegate methods
     // This method is called when the socket successfully connects. If the socket connection fails, this method is not called.
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didOpenWithProtocol protocol: String?) {
-        self.log {
-            self.logger.info("WebSocket connected successfully")
-        }
+        self.logger.info("WebSocket connected successfully")
         connectCompletion?(nil)
     }
     
     // This method is called when the socket is closed, such as disconnect or timeout.
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
         if let error = error {
-            self.log {
-                self.logger.error("WebSocket failed to connect: \(error.localizedDescription)")
-            }
+            self.logger.error("WebSocket failed to connect: \(error.localizedDescription)")
             connectCompletion?(error)
         } else {
-            self.log {
-                self.logger.info("WebSocket connection closed successfully")
-            }
+            self.logger.info("WebSocket connection closed successfully")
             connectCompletion?(nil)
             self.webSocketTask = nil
         }
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        self.log {
-            self.logger.info("WebSocket disconnected")
-        }
+        self.logger.info("WebSocket disconnected")
     }
 }
 
@@ -136,16 +121,10 @@ extension WebSocketClient: URLSessionDelegate {
 
 extension WebSocketClient {
     func enableLogging() {
-        self.isLogOn = true
+        self.logger.disabled(false)
     }
     
     func disableLogging() {
-        self.isLogOn = false
-    }
-    
-    func log(_ completion: @escaping () -> Void) {
-        if isLogOn {
-            completion()
-        }
+        self.logger.disabled(true)
     }
 }

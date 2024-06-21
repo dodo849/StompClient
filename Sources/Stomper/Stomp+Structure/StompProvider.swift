@@ -152,7 +152,6 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
 }
     
 public extension StompProvider {
-
     func enableLogging() -> Self {
         self.client?.enableLogging()
         return self
