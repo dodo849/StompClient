@@ -139,7 +139,8 @@ public final class StompClient: NSObject, StompClientProtocol {
             guard let self = self else { return }
             
             switch result {
-            case .failure(_): // The socket error handled WebSocketclient. It will never be executed.
+            case .failure(_):
+                isSocketConnect = false
                 return
             case .success(let message):
                 switch message {
