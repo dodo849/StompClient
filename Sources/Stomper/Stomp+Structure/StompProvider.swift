@@ -33,17 +33,18 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             return
         }
         
-        var mergedHeaders = mergeAndGenerateHeaders(entry: entry)
+        let mergedHeaders = mergeAndGenerateHeaders(entry: entry)
         
         switch entry.command {
         case .connect:
             client.connect(headers: mergedHeaders) { [weak self] result in
+                guard let self = self else { return }
                 switch result {
                 case .success():
                     if let response = "Connect success" as? Response {
                         completion(.success(response))
                     } else {
-                        self?.handleTypeMismatchError(
+                        self.handleTypeMismatchError(
                             "Connect success case of request method",
                             Response.self,
                             String.self,
@@ -58,6 +59,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 headers: mergedHeaders,
                 body: entry.body.toStompBody()
             ) { [weak self] result in
+                guard let self = self else { return }
                 switch result {
                 case .failure(let error):
                     completion(.failure(error))
@@ -66,7 +68,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
                     } else {
-                        self?.handleTypeMismatchError(
+                        self.handleTypeMismatchError(
                             "Send success case of request method",
                             Response.self,
                             StompReceiveMessage.self,
@@ -77,14 +79,12 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             }
             
         case .subscribe:
-            client.subscribe(
-                headers: mergedHeaders
-            ) { [weak self] result in
+            client.subscribe(headers: mergedHeaders) { [weak self] result in
                 switch result {
                 case .success(let receiveMessage):
                     guard let self = self else { return }
                     
-                    if let receiveType = Response.self as? StompReceiveMessage.Type {
+                    if Response.self is StompReceiveMessage.Type {
                         completion(.success(receiveMessage as! Response))
                     } else if let decodableType = Response.self as? Decodable.Type {
                         self.decodeHelper.handleDecodable(
@@ -110,6 +110,25 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 }
             }
             
+        case .disconnect:
+            client.disconnect(headers: mergedHeaders) { [weak self] result in
+                guard let self = self else { return }
+                switch result {
+                case .success():
+                    if let response = "Disconnect success" as? Response {
+                        completion(.success(response))
+                        self.client = nil
+                    } else {
+                        self.handleTypeMismatchError(
+                            "Disconnect success case of request method",
+                            Response.self,
+                            String.self,
+                            completion
+                        )
+                    }
+                }
+            }
+            
         default:
             guard let command = StompRequestCommand(
                 rawValue: entry.command.name
@@ -124,6 +143,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
             )
             
             client.sendAnyMessage(message: message) { [weak self] result in
+                guard let self = self else { return }
                 switch result {
                 case .failure(let error):
                     completion(.failure(error))
@@ -132,7 +152,7 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                     if let response = reciptMessage as? Response {
                         completion(.success(response))
                     } else {
-                        self?.handleTypeMismatchError(
+                        self.handleTypeMismatchError(
                             "Send \(entry.command.name) send success case of request method",
                             Response.self,
                             StompReceiveMessage.self,
@@ -143,11 +163,6 @@ open class StompProvider<Entry: EntryType>: StompProviderProtocol {
                 
             }
         }
-    }
-    
-    public func disconnect() {
-//        client?.disconnect() // TODO request에서 처리
-        client = nil
     }
 }
     

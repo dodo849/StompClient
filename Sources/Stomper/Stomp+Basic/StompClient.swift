@@ -26,8 +26,8 @@ public final class StompClient: NSObject, StompClientProtocol {
         var receiptID: String
     }
     
-    private let logger = Logger(
-        subsystem: Bundle.main.bundleIdentifier!,
+    private let logger = DisableableLogger(
+        subsystem: "Stomper",
         category: "StompClient"
     )
     
@@ -51,7 +51,7 @@ public final class StompClient: NSObject, StompClientProtocol {
     
     // MARK: Socket state
     private var isSocketConnect: Bool = false
-
+    
     // MARK: Inerceptor
     private var retrier: Retrier? = nil
     
@@ -66,15 +66,15 @@ public final class StompClient: NSObject, StompClientProtocol {
         message: StompRequestMessage,
         _ completion: @escaping ReceiptCompletionType
     ) {
+        socketConnectIfNeeded()
         self.performSendAnyMessage(message: message, completion)
     }
     
     private func performSendAnyMessage(
         message: StompRequestMessage,
-        isRetry: Bool = false,
+        didRetryCount: Int = 0,
         _ completion: @escaping ReceiptCompletionType
     ) {
-        socketConnectIfNeeded()
         websocketClient.sendMessage(message.toFrame())
         
         if let receiptID = message.headers.dict["receipt"] {
@@ -90,7 +90,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         headers: [String: String],
         _ connectCompletion: @escaping ConnectCompletionType
     ) {
-        guard let host = url.host
+        guard url.host != nil
         else {
             logger.error("""
                         No host in the provided URL.
@@ -117,7 +117,7 @@ public final class StompClient: NSObject, StompClientProtocol {
             guard let self = self else { return }
             
             switch result {
-            case .failure(let error): break // This is handle in Websocket Client
+            case .failure(_): break // This is handle in Websocket Client
             case .success(let message):
                 switch message {
                 case .string(let text):
@@ -211,12 +211,12 @@ public final class StompClient: NSObject, StompClientProtocol {
             headers: headers
         )
         
-            self.performSubscribe(
-                id: subscriptionID,
-                topic: topic,
-                message: subscribeMessage,
-                receiveCompletion
-            )
+        self.performSubscribe(
+            id: subscriptionID,
+            topic: topic,
+            message: subscribeMessage,
+            receiveCompletion
+        )
     }
     
     private func performSubscribe(
@@ -239,14 +239,14 @@ public final class StompClient: NSObject, StompClientProtocol {
         }
     }
     
-
+    
     public func unsubscribe(
         headers: [String: String]
     ) {
         guard let _ = headers["destination"]
         else { logger.error("Missing 'id' header"); return }
         
-        guard let topic = headers["destination"] 
+        guard let topic = headers["destination"]
         else { logger.error("Missing 'destination' header"); return }
         
         let unsubscribeMessage = StompRequestMessage(
@@ -256,7 +256,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         
         performUnsubscribe(message: unsubscribeMessage, topic: topic)
     }
-
+    
     private func performUnsubscribe(
         message: StompRequestMessage,
         topic: String
@@ -346,23 +346,18 @@ private extension StompClient {
             receiptCompletions.removeValue(forKey: receiptID)
         }
     }
-
+    
     private func handleRetry(
         message: StompRequestMessage,
         error: Error,
-        isRetried: Bool,
+        didRetryCount: Int,
         completion: @escaping (Result<StompReceiveMessage, any Error>) -> Void
     ) {
-        if isRetried {
-            completion(.failure(error))
-            return
-        }
-
         guard let retrier = retrier else {
             completion(.failure(error))
             return
         }
-
+        
         retrier.retry(
             message: message,
             error: error
@@ -371,27 +366,37 @@ private extension StompClient {
                 completion(.failure(error))
                 return
             }
-
+            
             switch retryType {
-            case .retry:
+            case .retry(let count):
+                if didRetryCount >= count {
+                    completion(.failure(error))
+                    return
+                }
+                
                 self.performSendAnyMessage(
                     message: retryMessage,
-                    isRetry: true,
+                    didRetryCount: didRetryCount + 1,
                     completion
                 )
                 
-            case .delayedRetry(let delay):
+            case let .delayedRetry(count, delay):
+                if didRetryCount >= count {
+                    completion(.failure(error))
+                    return
+                }
+                
                 DispatchQueue.global().asyncAfter(deadline: .now() + delay) {
                     self.performSendAnyMessage(
                         message: retryMessage,
-                        isRetry: true,
+                        didRetryCount: didRetryCount + 1,
                         completion
                     )
                 }
-
+                
             case .doNotRetry:
                 completion(.failure(error))
-
+                
             case .doNotRetryWithError(let retryError):
                 completion(.failure(retryError))
             }

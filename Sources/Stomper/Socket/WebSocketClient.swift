@@ -12,8 +12,9 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     private typealias ConnectCompletion = ((any Error)?) -> Void
     
     private let logger = DisableableLogger(
-        subsystem: Bundle.main.bundleIdentifier!,
-        category: "WebSocket"
+        subsystem: "Stomper",
+        category: "WebSocket",
+        isDisabled: true
     )
     
     private var webSocketTask: URLSessionWebSocketTask?
@@ -46,7 +47,9 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
         let socketMessage = URLSessionWebSocketTask.Message.string(message)
         webSocketTask?.send(socketMessage) { [weak self] error in
             if let error = error {
-                self?.logger.error("WebSocket failed to send the message:\n\(message)")
+                self?.logger.error("""
+                    WebSocket failed to send the message:\n\(message)\n error: \(error)
+                    """)
             } else {
                 self?.logger.info("WebSocket successfully sent the message:\n\(message)")
             }
@@ -106,7 +109,7 @@ class WebSocketClient: NSObject, URLSessionWebSocketDelegate {
     }
     
     func urlSession(_ session: URLSession, webSocketTask: URLSessionWebSocketTask, didCloseWith closeCode: URLSessionWebSocketTask.CloseCode, reason: Data?) {
-        self.logger.info("WebSocket disconnected")
+        self.logger.info("WebSocket try disconnect")
     }
 }
 

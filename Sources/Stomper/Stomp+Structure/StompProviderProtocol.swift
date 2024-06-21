@@ -55,13 +55,6 @@ public protocol StompProviderProtocol {
      */
     func intercepted(_ intercepter: Interceptor) -> Self
     
-    /**
-     Disconnects the STOMP connection.
-     
-     This will terminate the socket connection and reset all completions.
-     */
-    func disconnect()
-    
     
     /**
      When the receipt header is absent, it is automatically generated.
