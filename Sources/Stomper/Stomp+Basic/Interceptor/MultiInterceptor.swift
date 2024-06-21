@@ -36,7 +36,7 @@ struct MultiInterceptor: Interceptor {
     
     func retry(
         message: StompRequestMessage,
-        error: any Error,
+        errorMessage: StompReceiveMessage,
         completion: @escaping (StompRequestMessage, InterceptorRetryType) -> Void
     ) {
         let group = DispatchGroup()
@@ -48,13 +48,11 @@ struct MultiInterceptor: Interceptor {
         
         interceptors.forEach { interceptor in
             group.enter()
-            interceptor.retry(message: message, error: error) { newMessage, retryType in
+            interceptor.retry(message: message, errorMessage: errorMessage) { newMessage, retryType in
                 retryMessage = newMessage
                 
                 switch retryType {
-                case .retry:
-                    shouldRetry = true
-                case .delayedRetry(let count, let delay):
+                case let .retry(count, delay):
                     shouldRetry = true
                     retryCount = max(retryCount, count)
                     retryDelay = max(retryDelay, delay)
@@ -74,7 +72,7 @@ struct MultiInterceptor: Interceptor {
                 if retryDelay > 0 {
                     completion(
                         retryMessage,
-                        .delayedRetry(count: retryCount, delay: retryDelay)
+                        .retry(count: retryCount, delay: retryDelay)
                     )
                 } else {
                     completion(retryMessage, .retry(count: retryCount))
