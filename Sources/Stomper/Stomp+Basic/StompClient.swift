@@ -184,10 +184,7 @@ public final class StompClient: NSObject, StompClientProtocol {
         do {
             let receiveMessage = try StompReceiveMessage
                 .convertFromFrame(frameString)
-            
-            /// 그냥 여기서 핸들 에러 하고싶다......
-            ///
-            
+
             self.executeConnectCompletion(
                 message: receiveMessage,
                 didRetryCount: didRetryCount
@@ -386,9 +383,8 @@ private extension StompClient {
         message: StompReceiveMessage,
         didRetryCount: Int = 0
     ) {
-        if message.command != .message || message.command != .error {
-            return
-        }
+        guard message.command != .message || message.command != .error
+        else { return }
         
         if let topic = message.headers["destination"] {
             let executeReceiveCompletions = self.receiveCompletions
@@ -399,8 +395,8 @@ private extension StompClient {
                 receiveCompletions.forEach {
                     
                     // If error frame is for subscription, retry subscribe
-                    if let receiptID = $0.receiptID,
-                        message.command == .error,
+                    if message.command == .error,
+                       let receiptID = $0.receiptID,
                         message.headers["receipt-id"] == receiptID {
                         
                         handleSendAnyMessageRetry(
@@ -410,7 +406,7 @@ private extension StompClient {
                             completion: $0.completion
                         )
                     // If successfully received message, return all subscribe completions
-                    } else if message.command == .message{
+                    } else if message.command == .message {
                         receiveCompletions.forEach {
                             $0.completion(.success(message))
                         }
@@ -424,9 +420,8 @@ private extension StompClient {
         message: StompReceiveMessage,
         didRetryCount: Int = 0
     ) {
-        if message.command != .receipt || message.command != .error {
-            return
-        }
+        guard message.command != .receipt || message.command != .error
+            else { return }
         
         if let receiptID = message.headers["receipt-id"],
            let receiptCompletion = self.receiptCompletions[receiptID]  {
