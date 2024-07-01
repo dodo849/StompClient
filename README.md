@@ -1,5 +1,10 @@
 # Stomper
 
+![iOS badge](https://img.shields.io/badge/iOS-14.0%2B-black)
+![macOS badge](https://img.shields.io/badge/macOS-11.0%2B-black)
+![tvOS badge](https://img.shields.io/badge/tvOS-14.0%2B-black)
+![watchOS badge](https://img.shields.io/badge/watchOS-7.0%2B-black)
+
 > Stomper is a Swift network socket communication library that uses the STOMP protocol.
 
 #### This library provides a convenient Swift interface for STOMP-based socket communication.
@@ -8,11 +13,6 @@
 - Transforms bidirectional socket communication into a pub/sub model, making it convenient to use completion handlers.
 - Provides specialized protocols for easy management of specifications and endpoints.
 - Allows implementation of interceptors and retry logic.
-                                                        
-![iOS badge](https://img.shields.io/badge/iOS-14.0%2B-black)
-![macOS badge](https://img.shields.io/badge/macOS-11.0%2B-black)
-![tvOS badge](https://img.shields.io/badge/tvOS-14.0%2B-black)
-![watchOS badge](https://img.shields.io/badge/watchOS-7.0%2B-black)
 ---
 
 #### Currently Stabilizing... 🙇
