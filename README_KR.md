@@ -1,11 +1,11 @@
 # Stomper
 
+> Stomper는 STOMP 프로토콜을 사용하는 Swift용 네트워크 소켓 통신 라이브러리입니다.
+
 ![iOS badge](https://img.shields.io/badge/iOS-14.0%2B-black)
 ![macOS badge](https://img.shields.io/badge/macOS-11.0%2B-black)
 ![tvOS badge](https://img.shields.io/badge/tvOS-14.0%2B-black)
 ![watchOS badge](https://img.shields.io/badge/watchOS-7.0%2B-black)
-
-> Stomper는 STOMP 프로토콜을 사용하는 Swift용 네트워크 소켓 통신 라이브러리입니다.
 
 #### 이 라이브러리는 STOMP 기반 소켓 통신에 대한 편리한 Swift 인터페이스를 제공합니다.
 - Command 및 Header 명세를 컴파일 타임에 안전하게 정의할 수 있습니다.
