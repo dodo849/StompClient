@@ -21,7 +21,7 @@ import Foundation
      case disconnect
  }
 
- extension ChatMessageEntry: EntryType {
+ extension ChatEntry: EntryType {
      static var baseURL: URL {
          URL(string: "wws://localhost:8080")!
      }
@@ -43,7 +43,7 @@ import Foundation
              return .connect()
          case .subscribeChat:
              return .subscribe()
-         case .sendMessage(_):
+         case .sendMessage:
              return .send()
          case .disconnect:
              return .disconnect()
