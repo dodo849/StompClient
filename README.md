@@ -18,6 +18,7 @@
 - Transforms bidirectional socket communication into a pub/sub model, making it convenient to use completion handlers.
 - Provides specialized protocols for easy management of specifications and endpoints.
 - Allows implementation of interceptors and retry logic.
+
 For more details on STOMP, refer to the [STOMP Specification](https://stomp.github.io/stomp-specification-1.2.html).
 ### Docs
 - [Korean](https://github.com/dodo849/Stomper/blob/main/README_KR.md)
