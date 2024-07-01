@@ -4,46 +4,55 @@
 ![tvOS badge](https://img.shields.io/badge/tvOS-14.0%2B-black)
 ![watchOS badge](https://img.shields.io/badge/watchOS-7.0%2B-black)
 ---
-안정화중입니다...🙇
----
 
-통신 방식에 대한 자세한 사항은 (STOMP 명세)[https://stomp.github.io/stomp-specification-1.2.html]를 참고하세요.
+#### 안정화중입니다...🙇
 ---
+STOMP에 대한 자세한 사항은 [STOMP 명세](https://stomp.github.io/stomp-specification-1.2.html)를 참고하세요.
+<br/><br/>
 
 ## 설치
-1. Swift Package Manager (SPM) 사용
+### 1. Swift Package Manager (SPM) 사용
 SPM을 사용하여 패키지를 설치하려면 Package.swift 파일에 의존성을 추가합니다.
 ```swift
 .package(url: "https://github.com/dodo849/Stomper", from: "0.6.0")
 ```
-2. Xcode에서 패키지 추가
-    1. Xcode 프로젝트를 엽니다.
-    2. 프로젝트 탐색기에서 프로젝트 파일을 선택합니다.
-    3. "Swift Packages" 탭을 클릭합니다.
-    4. "Add Package Dependency" 버튼을 클릭합니다.
-    5. GitHub 또는 다른 저장소 URL을 입력하고, 다음 단계를 진행하여 원하는 버전을 선택합니다.
-    6. 패키지를 추가하면 Xcode가 자동으로 의존성을 다운로드하고 프로젝트에 통합합니다.
+### 2. Xcode에서 패키지 추가
+1. Xcode 프로젝트를 엽니다.
+2. 프로젝트 탐색기에서 프로젝트 파일을 선택합니다.
+3. "Swift Packages" 탭을 클릭합니다.
+4. "Add Package Dependency" 버튼을 클릭합니다.
+5. GitHub 또는 다른 저장소 URL을 입력하고, 다음 단계를 진행하여 원하는 버전을 선택합니다.
+6. 패키지를 추가하면 Xcode가 자동으로 의존성을 다운로드하고 프로젝트에 통합합니다.
+<br/>
+
 
 패키지 설치가 완료되면 import 구문을 사용하여 프로젝트에서 해당 라이브러리를 사용할 수 있습니다.
 ```swift
 import Stomper
 ```
+<br/>
 
 ## 준비단계 - EntryType
 
-`EntryType`을 상속하여 통신에 대한 명세를 관리할 수 있습니다. 먼저 enum에 통신에 대한 명칭을 열거하고, associated value를 이용해 통신에 필요한 인자를 받습니다. 그런 다음 `EntryType`을 상속하고 통신에 필요한 `baseURL`, `topic`, `command`, `body`, `additionalHeaders`를 정의합니다.
+`EntryType`을 상속하여 통신에 대한 명세를 관리할 수 있습니다. 먼저 enum에 통신에 대한 명칭을 열거하고, 연관값을 이용해 통신에 필요한 인자를 받습니다. 그런 다음 `EntryType`을 상속하고 통신에 필요한 `baseURL`, `topic`, `command`, `body`, `additionalHeaders`를 정의합니다.
 
-- **baseURL**: 서버의 주소입니다. `ws` 또는 `wss`로 시작합니다.
-- **topic**: STOMP 통신에서 `destination`에 해당하는 path입니다. 필요하지 않다면 `nil`을 사용하세요.
-- **command**: 어떤 STOMP 명령을 사용할지 정의합니다. 각 명령에는 STOMP 명세에 정의된 필수 Header를 associated value로 전달할 수 있습니다.
-- **body**: body에 들어가는 정보가 있다면 디코드 명세와 함께 인자를 전달합니다.
-  - `.none`: Body가 없을 경우
-  - `.withPlain`: 단순 String
-  - `.withData`: Data 형 정보
-  - `.withJSON`: JSON 정보. `Encodable` 객체를 받습니다.
-  - `.withCustomJSONE`: 기본적인 `JSONEncoder` 외의 인코더가 필요할 때 사용합니다. `Encodable` 객체와 `Encoder`를 받습니다.
-  - `.withParameters`: key-value 형태의 인자를 넘길 때 사용합니다. body에 들어갈 수 있도록 Data 형으로 변환하는 특수한 인코더가 필요합니다.
-- **additionalHeaders**: STOMP 명세 외에 특수한 헤더가 필요하다면 사용합니다. 만약 STOMP 명세와 겹치게 된다면 additionalHeaders가 우선됩니다.
+#### **baseURL**
+> 서버의 주소입니다. `ws` 또는 `wss`로 시작합니다.
+#### **topic**
+> STOMP 통신에서 `destination`에 해당하는 path입니다. 필요하지 않다면 `nil`을 사용하세요.
+#### **command**
+> 어떤 STOMP 명령을 사용할지 정의합니다. 각 명령에는 STOMP 명세에 정의된 필수 헤더를 연관값으로 전달할 수 있습니다.
+- 자세한 커맨드 종류와 헤더는 [`EntryCommand`](https://github.com/dodo849/Stomper/blob/main/Sources/Stomper/Stomp%2BStructure/EntryCommand.swift)를 참고하세요.
+#### **body**
+> body에 들어가는 정보가 있다면 디코드 명세와 함께 인자를 전달합니다.
+- `.none`: Body가 없을 경우
+- `.withPlain`: 단순 String
+- `.withData`: Data 형 정보
+- `.withJSON`: JSON 정보. `Encodable` 객체를 받습니다.
+- `.withCustomJSONE`: 기본적인 `JSONEncoder` 외의 인코더가 필요할 때 사용합니다. `Encodable` 객체와 `Encoder`를 받습니다.
+- `.withParameters`: key-value 형태의 인자를 넘길 때 사용합니다. body에 들어갈 수 있도록 Data 형으로 변환하는 특수한 인코더가 필요합니다.
+#### **additionalHeaders**
+> STOMP 명세 외에 특수한 헤더가 필요하다면 사용합니다. 만약 STOMP 명세와 겹치게 된다면 additionalHeaders가 우선됩니다.
 
 ```swift
 enum ChatEntry {
@@ -96,6 +105,7 @@ extension ChatEntry: EntryType {
     }
 }
 ```
+<br/>
 
 ## 사용단계 - Provider
 
@@ -105,7 +115,8 @@ extension ChatEntry: EntryType {
 let provider = StompProvider<ChatEntry>()
 ```
 
-`request` 메서드를 통해 요청을 보낼 수 있습니다. `of` 인자로 응답받을 타입을 정의하면 provider가 디코드 후 `success` 인자로 전달합니다. 자세한 사항은 `STOMPProviderProtocol`을 참고하세요.
+`request` 메서드를 통해 요청을 보낼 수 있습니다. `of` 인자로 응답받을 타입을 정의하면 provider가 디코드 후 `success` 인자로 전달합니다. 
+자세한 사항은 [`STOMPProviderProtocol`](https://github.com/dodo849/Stomper/blob/main/Sources/Stomper/Stomp%2BStructure/StompProviderProtocol.swift)을 참고하세요.
 
 ```swift
 provider.request(
@@ -120,6 +131,7 @@ provider.request(
     }
 }
 ```
+<br/>
 
 ## 추가 설정 - Interceptor
 
@@ -176,7 +188,9 @@ private let provider = StompProvider<ChatEntry>()
     .intercepted(StompTokenInterceptor())
 ```
 
-여러 개의 인터셉터를 설정하고 싶다면 `MultiInterceptor`를 참고하세요.
+여러 개의 인터셉터를 설정하고 싶다면 [`MultiInterceptor`](https://github.com/dodo849/Stomper/blob/main/Sources/Stomper/Stomp%2BBasic/Interceptor/MultiInterceptor.swift)를 참고하세요.
+<br/>
+
 
 ## 로깅 설정
 
